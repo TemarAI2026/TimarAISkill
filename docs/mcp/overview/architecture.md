@@ -1,37 +1,86 @@
-# MCP Architecture
+# MCP 架构说明
 
-## MCP role
+## 用途
 
-MCP 是 Timar 平台开放能力的统一底座。
+本页用于向外部接入方和 AI 编程助手解释应该如何理解 MCP。重点不是穷举内部系统，而是把公开能力边界说清楚，避免调用方自己发明额外层级或不被支持的运行时行为。
 
-它的职责是：
+## MCP 的角色
 
-- 提供一致的开放能力入口
+MCP 是 Timar 平台统一的开放能力底座。
+
+它在公开层面的职责包括：
+
+- 提供单一一致的开放能力入口
 - 统一运行时调用模型
-- 统一签名、请求标识、错误语义与能力路由
+- 统一签名、请求标识、响应包装语义和能力路由
+- 为更上层的工具与协议适配层提供稳定的执行底座
 
-## Relationship to upper layers
+## 与上层的关系
 
-- `skill`：AI-facing 的引导与触发层
-- `x402`：协议适配层
-- 未来其他协议：同样应作为 MCP 上层适配层
+在当前架构里：
 
-这些上层入口不应各自维护独立业务核心，而应路由到 MCP。
+- `skill` 是面向 AI 的引导与触发层
+- `x402` 是协议适配层
+- 未来其他协议接入面，也应作为建立在 MCP 之上的适配层
 
-## What MCP owns in phase one
+这些上层入口如果需要复用同一套收单、代付或公共签名行为，就不应各自维护独立业务内核，而应统一路由到 MCP。
 
-- payment capability path
-- payout capability path
-- balance capability path
-- notification capability path
-- common runtime calling conventions
+## 第一阶段由 MCP 负责的内容
 
-## What MCP does not own in phase one
+在第一阶段，MCP 负责以下公开能力面：
+
+- 收单
+- 代付
+- 余额
+- 通知
+- 公共运行时调用约定
+
+这意味着，对外接入时应把 MCP 建模为“已发布资金相关开放能力的运行时 API 层”。
+
+## 第一阶段不由 MCP 负责的内容
+
+MCP 当前不是以下内容的公开所有者：
 
 - 商户注册流程
-- KYB/KYC 过程本身
-- 内部钱包实现细节
-- settlement / ledger 内部逻辑
-- 内部对账和运营流程
+- KYB / KYC 处理流程本身
+- wallet 内部实现细节
+- settlement / ledger 内部实现
+- 内部对账流程
+- 内部运营审批流程
 
-这些要么属于前置条件，要么属于下层平台实现。
+这些内容要么是运行时接入前的前置条件，要么属于当前公开 MCP 契约之外的平台内部能力。
+
+## 给 AI 助手的建模规则
+
+当 AI 编程助手阅读这套文档时，应把 MCP 理解为：
+
+- 已发布能力的调用入口
+- 公共签名与响应规则的落点
+- 不是用来猜测 merchant、ledger、wallet 内部行为的地方
+
+如果某个事实没有出现在 MCP 文档或其指向的精确 reference 里，就不应自行脑补。
+
+## 推荐理解模型
+
+规划接入时，建议使用这套分层模型：
+
+1. 业务准入和开户发生在运行时之前
+2. MCP 负责运行时能力调用
+3. `skill` 负责提升 AI 助手理解和调用 MCP 的稳定性
+4. `x402` 或未来其他协议层，负责把自己的接入面适配到 MCP
+
+这样做可以把公开接入逻辑集中到一处，降低人工客户端、AI 生成客户端和未来协议适配层之间的漂移。
+
+## 常见错误
+
+- 把 MCP 当成完整的商户生命周期平台，而不是运行时能力层
+- 在公开客户端代码里塞入内部 ledger 或 wallet 假设
+- 让每个上层适配面自己定义一套签名和状态语义
+- 明明只是换接入面，却在 MCP 之外重复维护收单或代付业务逻辑
+
+## 相关页面
+
+- [`./environments.md`](./environments.md)
+- [`./auth-signing.md`](./auth-signing.md)
+- [`../capabilities/payment.md`](../capabilities/payment.md)
+- [`../capabilities/payout.md`](../capabilities/payout.md)
