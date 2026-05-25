@@ -2,28 +2,33 @@
 
 ## How to use this router
 
-將此頁作為撰寫整合程式或提示 AI 程式助理前的第一站。先根據要完成的任務打開對應的共用文件與領域文件，再到參考文件確認實際的請求與回應欄位。
+使用本頁作為撰寫整合程式碼或提示 AI 編程助手前的第一站。這個 router 的目標，是幫助你先選擇正確的 MCP 能力路徑，再進入對應的共享規則與目前已發布業務領域說明。
 
-如果你是第一次接觸這組 API，請先閱讀 [Domain Map](./domain-map.zh-TW.md)，再回到本頁。
+如果你剛接觸目前公開 API 面，請先讀 [Domain Map](./domain-map.zh-TW.md)，再回到這裡。
 
-## Task-based routes
+## Capability-based routes
 
 | Task | Read next | Why this path |
 | --- | --- | --- |
-| Sign a request | [Shared signing guide](../domains/shared/auth-signing.zh-TW.md), [Shared headers reference](../references/shared/headers.zh-TW.md), [Signature examples](../references/shared/signature-examples.zh-TW.md) | 說明共用簽名流程，以及必填標頭：`X-Api-Key`、`X-Api-Timestamp`、`X-Api-RequestId`、`X-Api-Sign`。 |
-| Create a crypto payment | [Crypto overview](../domains/crypto/overview.zh-TW.md), [Create payment](../domains/crypto/create-payment.zh-TW.md), [Crypto endpoints](../references/crypto/endpoints.zh-TW.md), [Request and response models](../references/crypto/request-response-models.zh-TW.md) | 對應 `POST /api/v2/digital/payments` 的支付流程，並提供實作所需的請求與回應欄位。 |
-| Query a payment order | [Crypto overview](../domains/crypto/overview.zh-TW.md), [Query order](../domains/crypto/query-order.zh-TW.md), [Crypto endpoints](../references/crypto/endpoints.zh-TW.md), [Crypto statuses](../references/crypto/statuses.zh-TW.md) | 對應 `GET /api/v2/digital/payments/{orderId}` 的訂單查詢，並協助解讀回傳的訂單狀態。 |
-| Cancel a payment order | [Crypto overview](../domains/crypto/overview.zh-TW.md), [Query order](../domains/crypto/query-order.zh-TW.md), [Crypto endpoints](../references/crypto/endpoints.zh-TW.md), [Error handling](../domains/shared/error-handling.zh-TW.md) | 對應 `POST /api/v2/digital/payments/{orderId}/cancel`，包含取消前後的狀態確認與錯誤處理重點。 |
-| Create a crypto payout | [Crypto overview](../domains/crypto/overview.zh-TW.md), [Create payout](../domains/crypto/create-payout.zh-TW.md), [Crypto endpoints](../references/crypto/endpoints.zh-TW.md), [Request and response models](../references/crypto/request-response-models.zh-TW.md) | 對應 `POST /api/v2/digital/payouts` 的代付流程，涵蓋送單與追蹤所需欄位。 |
-| Query a payout order | [Crypto overview](../domains/crypto/overview.zh-TW.md), [Query order](../domains/crypto/query-order.zh-TW.md), [Crypto endpoints](../references/crypto/endpoints.zh-TW.md), [Crypto statuses](../references/crypto/statuses.zh-TW.md) | 對應 `GET /api/v2/digital/payouts/{orderId}`，幫助你以一致方式理解代付生命週期狀態。 |
-| Query balance | [Crypto overview](../domains/crypto/overview.zh-TW.md), [Query balance](../domains/crypto/query-balance.zh-TW.md), [Crypto endpoints](../references/crypto/endpoints.zh-TW.md) | 對應 `GET /api/v2/digital/balances` 的餘額查詢，以及相關的加密貨幣帳務語境。 |
-| Understand callback and webhook handling | [Handle webhook](../domains/crypto/handle-webhook.zh-TW.md), [Response conventions](../domains/shared/response-conventions.zh-TW.md), [Error handling](../domains/shared/error-handling.zh-TW.md), [Integration checklist](../references/crypto/integration-checklist.zh-TW.md) | 說明如何接收、驗證並處理非同步加密貨幣通知，協助建立較完整的正式環境流程。 |
+| Sign a request | [Shared signing guide](../domains/shared/auth-signing.zh-TW.md), [Shared headers reference](../references/shared/headers.zh-TW.md), [Signature examples](../references/shared/signature-examples.zh-TW.md) | 說明 MCP 背後的共享簽名流程，以及呼叫能力時需要的請求標頭。 |
+| Create a crypto payment | [Crypto overview](../domains/crypto/overview.zh-TW.md), [Create payment](../domains/crypto/create-payment.zh-TW.md), [Crypto endpoints](../references/crypto/endpoints.zh-TW.md), [Request and response models](../references/crypto/request-response-models.zh-TW.md) | 覆蓋目前透過數幣業務領域文件公開的支付能力路徑。 |
+| Query a payment order | [Crypto overview](../domains/crypto/overview.zh-TW.md), [Query order](../domains/crypto/query-order.zh-TW.md), [Crypto endpoints](../references/crypto/endpoints.zh-TW.md), [Crypto statuses](../references/crypto/statuses.zh-TW.md) | 幫助理解目前公開的支付查單能力路徑與回傳狀態。 |
+| Cancel a payment order | [Crypto overview](../domains/crypto/overview.zh-TW.md), [Query order](../domains/crypto/query-order.zh-TW.md), [Crypto endpoints](../references/crypto/endpoints.zh-TW.md), [Error handling](../domains/shared/error-handling.zh-TW.md) | 指向目前公開的支付取消能力路徑及其錯誤處理要求。 |
+| Create a crypto payout | [Crypto overview](../domains/crypto/overview.zh-TW.md), [Create payout](../domains/crypto/create-payout.zh-TW.md), [Crypto endpoints](../references/crypto/endpoints.zh-TW.md), [Request and response models](../references/crypto/request-response-models.zh-TW.md) | 覆蓋目前數幣業務領域公開的代付能力路徑。 |
+| Query a payout order | [Crypto overview](../domains/crypto/overview.zh-TW.md), [Query order](../domains/crypto/query-order.zh-TW.md), [Crypto endpoints](../references/crypto/endpoints.zh-TW.md), [Crypto statuses](../references/crypto/statuses.zh-TW.md) | 適用於目前公開的代付查單能力路徑與狀態含義。 |
+| Query balance | [Crypto overview](../domains/crypto/overview.zh-TW.md), [Query balance](../domains/crypto/query-balance.zh-TW.md), [Crypto endpoints](../references/crypto/endpoints.zh-TW.md) | 覆蓋目前公開的餘額能力路徑及其數幣帳戶上下文。 |
+| Understand callback and webhook handling | [Handle webhook](../domains/crypto/handle-webhook.zh-TW.md), [Response conventions](../domains/shared/response-conventions.zh-TW.md), [Error handling](../domains/shared/error-handling.zh-TW.md), [Integration checklist](../references/crypto/integration-checklist.zh-TW.md) | 說明如何消費目前已發布數幣能力集的非同步通知。 |
 
 ## Before code generation
 
-開始產生程式碼前，請確認提示或實作計畫中已包含目標端點、必填簽名標頭、對應任務的領域文件，以及用來確認欄位與狀態的參考文件。
+在產生程式碼前，請確保提示詞或實作方案裡已經包含：
 
-目前已公開的加密貨幣整合端點如下：
+- 目標能力路徑
+- 必填簽名請求標頭
+- 對應的共享規則文件
+- 欄位與狀態所需的參考資料
+
+對於目前已發布的數幣能力集，可用端點包括：
 
 - `POST /api/v2/digital/payments`
 - `GET /api/v2/digital/payments/{orderId}`
