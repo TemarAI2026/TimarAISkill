@@ -14,8 +14,22 @@ This file explains where documentation belongs in `TimarAISkill` and how the rep
 
 The `docs/` directory contains two kinds of content:
 
+- MCP-first public documentation under `docs/mcp/`
 - public AI-facing documentation under `docs/skill/`
 - repository-maintenance support documents such as specs, plans, and workflow references
+
+## `docs/mcp/`
+
+`docs/mcp/` is the MCP-first public documentation home.
+
+Its role is to provide:
+
+- MCP overview
+- environment guidance
+- auth and signing guidance
+- capability routing for payment, payout, balance, and notifications
+
+It stays high-level in phase one and routes readers into current published fact and domain documents when exact contract detail is needed.
 
 ## `docs/skill/`
 
@@ -24,7 +38,7 @@ The `docs/` directory contains two kinds of content:
 In the current architecture framing:
 
 - MCP is the capability base
-- `docs/skill/` is the public guidance layer for using MCP-backed capabilities
+- `docs/skill/` is the AI-facing public guidance layer for using MCP-backed capabilities
 - `skill`, `x402`, and future protocol surfaces are upper-layer adapters or trigger paths
 
 Current language model:

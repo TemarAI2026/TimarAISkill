@@ -16,13 +16,19 @@ This repository is the standalone home for public AI-facing integration assets a
 
 ## Main entrypoint
 
-- [`docs/skill/README.md`](./docs/skill/README.md)
-- [`docs/skill/README.en.md`](./docs/skill/README.en.md)
-- [`docs/skill/README.zh-TW.md`](./docs/skill/README.zh-TW.md)
+- MCP-first public entry:
+  - [`docs/mcp/README.md`](./docs/mcp/README.md)
+  - [`docs/mcp/README.en.md`](./docs/mcp/README.en.md)
+  - [`docs/mcp/README.zh-TW.md`](./docs/mcp/README.zh-TW.md)
+- AI-facing guidance entry:
+  - [`docs/skill/README.md`](./docs/skill/README.md)
+  - [`docs/skill/README.en.md`](./docs/skill/README.en.md)
+  - [`docs/skill/README.zh-TW.md`](./docs/skill/README.zh-TW.md)
 
 ## Directory structure
 
-- `docs/skill/hub/`: routing and MCP capability entry documents
+- `docs/mcp/`: MCP-first public overview and capability routing
+- `docs/skill/hub/`: AI-facing routing and MCP capability entry documents
 - `docs/skill/domains/`: shared rules and current published capability guides
 - `docs/skill/references/`: exact headers, endpoints, models, statuses, and checklists
 - `docs/skill/examples/`: runnable integration examples for supported languages
