@@ -47,9 +47,16 @@
 
 - `Timestamp expired.`
 
-## 能力参考入口
+## MCP 参考入口
 
-做当前端点和数据契约核对时，请回到这些精确 reference：
+建议先使用这些 MCP-facing reference 页面：
+
+- 端点：[`./endpoints.md`](./endpoints.md)
+- 请求与响应模型：[`./request-response-models.md`](./request-response-models.md)
+- 状态语义：[`./status-semantics.md`](./status-semantics.md)
+- 错误与重试：[`./error-retry.md`](./error-retry.md)
+
+然后再回到这些精确 lower-layer reference 做最终契约核对：
 
 - headers：[`../../skill/references/shared/headers.md`](../../skill/references/shared/headers.md)
 - 签名示例：[`../../skill/references/shared/signature-examples.md`](../../skill/references/shared/signature-examples.md)
@@ -66,7 +73,8 @@
 1. 先在本页确认公共请求头和签名规则
 2. 再在本页确认公共响应和错误语义
 3. 再打开目标 MCP 能力页
-4. 最后回到上面链接的精确 reference，完成实现前和上线前核对
+4. 再使用上面的 MCP-facing reference 页面
+5. 最后回到精确 lower-layer reference，完成实现前和上线前核对
 
 ## 常见错误
 

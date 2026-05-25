@@ -47,9 +47,16 @@
 
 - `Timestamp expired.`
 
-## 能力參考入口
+## MCP 參考入口
 
-做目前端點與資料契約核對時，請回到這些精確 reference：
+建議先使用這些 MCP-facing reference 頁面：
+
+- 端點：[`./endpoints.zh-TW.md`](./endpoints.zh-TW.md)
+- 請求與回應模型：[`./request-response-models.zh-TW.md`](./request-response-models.zh-TW.md)
+- 狀態語義：[`./status-semantics.zh-TW.md`](./status-semantics.zh-TW.md)
+- 錯誤與重試：[`./error-retry.zh-TW.md`](./error-retry.zh-TW.md)
+
+然後再回到這些精確 lower-layer reference 做最終契約核對：
 
 - headers：[`../../skill/references/shared/headers.zh-TW.md`](../../skill/references/shared/headers.zh-TW.md)
 - 簽名示例：[`../../skill/references/shared/signature-examples.zh-TW.md`](../../skill/references/shared/signature-examples.zh-TW.md)
@@ -66,7 +73,8 @@
 1. 先在本頁確認公共請求標頭與簽名規則
 2. 再在本頁確認公共回應與錯誤語義
 3. 再打開目標 MCP 能力頁
-4. 最後回到上面連結的精確 reference，完成實作前與上線前核對
+4. 再使用上面的 MCP-facing reference 頁面
+5. 最後回到精確 lower-layer reference，完成實作前與上線前核對
 
 ## 常見錯誤
 

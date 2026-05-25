@@ -47,9 +47,16 @@ Known current public message:
 
 - `Timestamp expired.`
 
-## Capability reference entrypoints
+## MCP reference entrypoints
 
-Use these exact references for current endpoint and data-contract validation:
+Use these MCP-facing reference pages first:
+
+- endpoints: [`./endpoints.en.md`](./endpoints.en.md)
+- request and response models: [`./request-response-models.en.md`](./request-response-models.en.md)
+- status semantics: [`./status-semantics.en.md`](./status-semantics.en.md)
+- error and retry guidance: [`./error-retry.en.md`](./error-retry.en.md)
+
+Then use these exact lower-layer source references for final contract validation:
 
 - headers: [`../../skill/references/shared/headers.en.md`](../../skill/references/shared/headers.en.md)
 - signature examples: [`../../skill/references/shared/signature-examples.en.md`](../../skill/references/shared/signature-examples.en.md)
@@ -66,7 +73,8 @@ Recommended usage order:
 1. confirm runtime headers and signing rules here
 2. confirm response and error semantics here
 3. open the target MCP capability page
-4. validate final implementation details against the linked exact references
+4. use the MCP-facing reference pages above
+5. validate final implementation details against the linked exact references
 
 ## Common mistakes
 
