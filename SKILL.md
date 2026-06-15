@@ -6,7 +6,7 @@
 
 ```
 ┌─────────────────────────────────────┐
-│         Skill (this file)           │  ← AI-facing trigger & guide layer
+│    Skill (this file)                │  ← AI-facing trigger & guide layer
 │    Understand intent → Route        │
 └──────────────┬──────────────────────┘
                │ invoke via MCP protocol
@@ -22,6 +22,37 @@
 │   /api/v2/digital/*                 │
 └─────────────────────────────────────┘
 ```
+
+### Alternative Entry: X402 Protocol Adapter
+
+For AI Agents that prefer **pay-per-use HTTP access** (stablecoin payments), the X402 adapter provides the same capabilities through HTTP endpoints:
+
+```
+┌─────────────────────────────────────┐
+│   AI Agent (x402 client)            │  ← Pays per call with USDC
+└──────────────┬──────────────────────┘
+               │ HTTP + x402 payment
+               ▼
+┌─────────────────────────────────────┐
+│   X402 Protocol Adapter             │  ← HTTP server, payment middleware
+│   npm run start:x402                │     (routes to same MCP tools)
+└──────────────┬──────────────────────┘
+               │ same MCP routers
+               ▼
+┌─────────────────────────────────────┐
+│      TimarAIMCP (MCP Routers)       │  ← Capability execution layer
+└──────────────┬──────────────────────┘
+               │ HTTP + HMAC-SHA256 sign
+               ▼
+┌─────────────────────────────────────┐
+│       Timar Public API              │
+└─────────────────────────────────────┘
+```
+
+| Entry Mode | Transport | Auth | Best For |
+|------------|-----------|------|----------|
+| **Skill → MCP** | STDIO | API Key + Secret | Local AI assistants (Claude, Cursor) |
+| **X402 Adapter** | HTTP | Stablecoin payment per call | Autonomous AI Agents, pay-per-use |
 
 **You are in the Skill layer.** Your job is to understand user intent, select the right MCP tool, format correct parameters, and interpret results for the user. You do NOT call Timar APIs directly — you call MCP tools, and the MCP server handles signing, routing, and API communication.
 
