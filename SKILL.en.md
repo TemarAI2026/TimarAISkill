@@ -1,0 +1,429 @@
+# Timar Payment Skill
+
+> **One SKILL file, any AI Agent can call Timar payment capabilities via X402 protocol.**
+
+## What This Is
+
+This file is an AI Agent-readable skill instruction. Any AI Agent that supports the X402 protocol can, after reading this file, call Timar's payment, payout, and balance query capabilities via HTTP + stablecoin pay-per-use.
+
+**You don't need to deploy any service, you don't need an API key, and you don't need to register an account.** The X402 protocol handles authentication and payment automatically.
+
+## Architecture
+
+```
+┌───────────────────────────────┐
+│   Any AI Agent                │  ← Reads this SKILL file
+│   (Claude / GPT / Cursor / …) │
+└──────────────┬────────────────┘
+               │ HTTP + USDC payment (X402 protocol)
+               ▼
+┌───────────────────────────────┐
+│   X402 Adapter Layer          │  ← Already deployed, you don't need to manage it
+│   (TimarAIMCP + X402)         │
+└──────────────┬────────────────┘
+               │ MCP tool invocation + HMAC signature
+               ▼
+┌───────────────────────────────┐
+│   Timar Public API            │  ← Already deployed
+│   /api/v2/digital/*           │
+└───────────────────────────────┘
+```
+
+**You only need to care about: sending HTTP requests to X402 endpoints. Pay and get results.**
+
+## Endpoint Overview
+
+| Method | Endpoint | Capability | X402 Payment Mode |
+|--------|----------|------------|-------------------|
+| `POST` | `/v1/payment/create` | Create payment order (collect) | **Dynamic** — X402 amount = actual transfer amount, payTo = `to` field |
+| `GET` | `/v1/payment/{orderId}` | Query payment order status | None — MCP API Key auth |
+| `DELETE` | `/v1/payment/{orderId}` | Cancel payment order | None — MCP API Key auth |
+| `POST` | `/v1/payout/create` | Create payout order (send) | **Dynamic** — X402 amount = actual payout amount, payTo = `withdrawAddress` |
+| `GET` | `/v1/payout/{orderId}` | Query payout order status | None — MCP API Key auth |
+| `GET` | `/v1/balance` | Query account balances | None — MCP API Key auth |
+
+> **X402 only for transfer operations:** `payment.create` and `payout.create` use X402 as the actual business transfer. The Agent pays USDC directly to the recipient using the user-authorized wallet.
+> Query/cancel operations are protected by MCP-layer API Key auth and forwarded directly with no payment required.
+
+**Free endpoints (no payment required):**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/health` | Service health check |
+| `GET` | `/v1/tools` | List all available tools and prices |
+
+## Payment Networks and Assets
+
+| Network | Chain | Payment Asset |
+|---------|-------|---------------|
+| `base` | Base (recommended, low gas) | USDC |
+| `ethereum` | Ethereum | USDC |
+| `solana` | Solana | USDC (EPjFWdd5…) |
+
+## How to Call (X402 Protocol Flow)
+
+### Prerequisite: User authorizes wallet to Agent
+
+Before calling any payment endpoint, the user must grant the Agent control (or signing permission) over their wallet. This is the prerequisite for X402. The implementation depends on your Agent framework (e.g. Coinbase AgentKit, Lit Protocol, etc.).
+
+---
+
+### `payment.create` — Dynamic Payment Flow
+
+#### Step 1: Send Request → Receive 402 (server returns actual transfer params)
+
+```http
+POST /v1/payment/create HTTP/1.1
+Host: {x402-server}
+Content-Type: application/json
+
+{
+  "merchantOrderId": "order-001",
+  "merchantUserId": "user-123",
+  "to": "0xRecipientWalletAddress",
+  "amount": 100,
+  "currency": "USDT",
+  "network": "base"
+}
+```
+
+The server returns `402 Payment Required` with body:
+
+```json
+{
+  "x402Version": 1,
+  "accepts": [{
+    "scheme": "exact",
+    "network": "base",
+    "maxAmountRequired": "100",
+    "payTo": "0xRecipientWalletAddress",
+    "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "description": "Pay the recipient to complete this transfer"
+  }],
+  "error": "Payment required"
+}
+```
+
+> ⚠️ Note: `payTo` = your request's `to` field (the actual recipient). `maxAmountRequired` = the amount to transfer. **This is NOT Timar's wallet — it's paid directly to the recipient.**
+
+#### Step 2: Agent pays using user-authorized wallet
+
+The Agent calls a wallet SDK (e.g. `viem`, `ethers.js`, Coinbase SDK):
+- Transfer `maxAmountRequired` USDC to `payTo` address
+- Obtain on-chain proof (tx hash / payment proof)
+- Construct the `X-PAYMENT` header
+
+#### Step 3: Retry with payment proof
+
+```http
+POST /v1/payment/create HTTP/1.1
+Host: {x402-server}
+Content-Type: application/json
+X-PAYMENT: {base64-encoded-payment-proof}
+
+{
+  "merchantOrderId": "order-001",
+  "merchantUserId": "user-123",
+  "to": "0xRecipientWalletAddress",
+  "amount": 100,
+  "currency": "USDT",
+  "network": "base"
+}
+```
+
+#### Step 4: Receive business result
+
+Server verifies on-chain proof → calls Timar API → returns 200:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "orderId": "pay_abc123",
+    "status": "SUCCESS",
+    "txId": "0xOnChainTxHash",
+    "amount": 100,
+    "currency": "USDT"
+  }
+}
+```
+
+---
+
+### Read/Cancel endpoints — Direct call (no X402)
+
+These endpoints (`GET /payment/:id`, `DELETE /payment/:id`, `GET /payout/:id`, `GET /balance`) require **no payment**. The MCP layer handles authentication via API Key. Just send the request directly:
+
+```http
+GET /v1/payment/pay_abc123 HTTP/1.1
+Host: {x402-server}
+```
+
+The server forwards the request to MCP and returns the result immediately — no 402 handshake, no wallet needed.
+
+> **If your Agent framework has built-in X402 support** (e.g. Coinbase AgentKit), it will automatically skip the payment handshake when the server returns 200 directly.
+- Which networks are supported
+
+### Step 2: Pay → Resend Request
+
+The Agent pays the specified amount of USDC using its wallet, obtains a payment proof, and resends the request with the `PAYMENT-SIGNATURE` header:
+
+```
+POST /v1/payment/create HTTP/1.1
+Host: {x402-server}
+Content-Type: application/json
+PAYMENT-SIGNATURE: {payment-proof}
+
+{
+  "merchantOrderId": "order-001",
+  "merchantUserId": "user-123",
+  "amount": 100,
+  "currency": "USDT",
+  "network": "ethereum"
+}
+```
+
+### Step 3: Receive Business Result
+
+After payment verification, the server returns 200 + business result:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "orderId": "pay_abc123",
+    "status": "PENDING",
+    "paymentUrl": "https://pay.timar.io/abc123",
+    "receiveAddress": "0x...",
+    "expiresInSeconds": 1800
+  }
+}
+```
+
+> **If your Agent framework has built-in X402 support** (e.g., Coinbase AgentKit), steps 2-3 are handled automatically. You just send the request.
+
+---
+
+## Tool Reference
+
+### 1. `POST /v1/payment/create` — Create Payment Order (Collect)
+
+**When to use:** User wants to receive crypto from a customer.
+
+**Request body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `merchantOrderId` | string | ✅ | Your unique order ID |
+| `merchantUserId` | string | ✅ | Your user identifier |
+| `amount` | number | ✅ | Amount |
+| `currency` | string | ✅ | Currency code, e.g., `USDT`, `USDC` |
+| `network` | string | ✅ | Blockchain network, e.g., `ethereum`, `tron`, `base` |
+| `returnUrl` | string | ❌ | Redirect URL after payment |
+| `cancelUrl` | string | ❌ | Redirect URL on cancel |
+
+**Key response fields:**
+- `orderId` — Platform order ID (**save this! needed for all subsequent queries**)
+- `paymentUrl` — Payment page URL for the customer
+- `receiveAddress` — Deposit address
+- `expiresInSeconds` — Expiry countdown
+
+**Common mistakes:**
+- ❌ Do not invent a `callbackUrl` field
+- ❌ Do not confuse `merchantOrderId` (yours) with `orderId` (platform's)
+- ❌ Do not combine `currency` and `network` into one field
+- ❌ Do not show an expired `paymentUrl` (check `expiresInSeconds` first)
+
+---
+
+### 2. `GET /v1/payment/{orderId}` — Query Payment Status
+
+**When to use:** User wants to check the status of an existing payment order.
+
+**Path parameter:**
+- `orderId` — Platform order ID (**not** merchantOrderId)
+
+**Query parameters:**
+
+| Field | Description |
+|-------|-------------|
+| `environment` | `sandbox` or `production` (optional) |
+
+**Key response fields:**
+- `status`: `PENDING` → awaiting payment | `SUCCESS` → completed | `CANCEL` → cancelled | `RISK` → risk blocked
+- `paidAmount` — Actual paid amount
+- `fee` / `feeCurrency` — Fee details
+- `depositDetails` — On-chain deposit info
+
+---
+
+### 3. `DELETE /v1/payment/{orderId}` — Cancel Payment Order
+
+**When to use:** User wants to cancel an unpaid payment order.
+
+**Path parameter:**
+- `orderId` — Platform order ID
+
+**Query parameters:**
+
+| Field | Description |
+|-------|-------------|
+| `environment` | `sandbox` or `production` (optional) |
+
+**Note:** Only orders with `PENDING` status can be cancelled.
+
+---
+
+### 4. `POST /v1/payout/create` — Create Payout Order (Send to External Wallet)
+
+**When to use:** User wants to send crypto to an external wallet address.
+
+**Request body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `merchantOrderId` | string | ✅ | Your unique order ID |
+| `merchantUserId` | string | ✅ | Your user identifier |
+| `amount` | number | ✅ | Amount |
+| `currency` | string | ✅ | Currency code |
+| `network` | string | ✅ | Blockchain network |
+| `withdrawAddress` | string | ✅ | Destination wallet address |
+
+**Key response fields:**
+- `orderId` — Platform order ID (**save this!**)
+- `fee` — Total fee deducted
+- `txId` — On-chain transaction hash (may still be processing)
+
+**Common mistakes:**
+- ❌ `withdrawAddress` must match `network` (Ethereum address cannot use Tron network)
+- ❌ Do not treat payout as a mirror of payment (different fields, different flow)
+- ❌ Do not include `returnUrl` / `cancelUrl` (those are payment-only fields)
+- ❌ **Create success ≠ payout complete** — poll status to confirm receipt
+
+---
+
+### 5. `GET /v1/payout/{orderId}` — Query Payout Status
+
+**When to use:** User wants to check the status of a payout order.
+
+**Path parameter:**
+- `orderId` — Platform order ID
+
+**Query parameters:**
+
+| Field | Description |
+|-------|-------------|
+| `environment` | `sandbox` or `production` (optional) |
+
+**Key response fields:**
+- `status` — Numeric status code (see status table)
+- `totalFee` / `networkFee` / `serviceFee` — Fee breakdown
+- `txId` — On-chain transaction hash
+- `sourceAddress` / `withdrawAddress` — Source / destination addresses
+
+---
+
+### 6. `GET /v1/balance` — Query Account Balances
+
+**When to use:** User wants to check wallet balances.
+
+**Query parameters:**
+
+| Field | Description |
+|-------|-------------|
+| `environment` | `sandbox` or `production` (optional) |
+
+**Response fields per currency item:**
+- `currency` — Currency code
+- `availableBalance` — Usable balance (**use this for spending decisions**)
+- `lockedBalance` — Frozen/reserved balance
+- `totalBalance` — Sum of both
+
+**Note:** Use `availableBalance` for spending decisions, **not** `totalBalance`.
+
+---
+
+## Decision Flowchart
+
+```
+User mentions "collect" / "receive payment" / "incoming"
+  → Receiving money FROM a customer?
+    → YES → POST /v1/payment/create
+    → NO  → Continue below
+
+User mentions "payout" / "withdraw" / "send" / "transfer out"
+  → Sending money TO an external wallet?
+    → YES → POST /v1/payout/create
+    → NO  → Ask for clarification
+
+User mentions "check" / "query" / "status" / "balance"
+  → Is there an orderId?
+    → YES → Payment or payout? → GET /v1/payment/{orderId} or GET /v1/payout/{orderId}
+    → NO  → GET /v1/balance
+
+User mentions "cancel"
+  → Is there an orderId?
+    → YES → DELETE /v1/payment/{orderId}
+    → NO  → Ask for orderId
+```
+
+## Error Handling
+
+When a request returns an error, troubleshoot in this order:
+
+1. **402 payment failed** → Check wallet balance and network selection
+2. **Auth failure** → X402 payment proof is invalid, re-acquire
+3. **Validation error** → Check that all required fields are present
+4. **Field value error** → Is the currency valid? Does network match the address?
+5. **orderId not found** → Confirm you're using the platform `orderId`, not `merchantOrderId`
+6. **Insufficient balance** → Use `GET /v1/balance` to check `availableBalance` first
+7. **Risk blocked** → Status is `RISK`, contact support
+
+## Best Practices
+
+1. **Always save `orderId` after create** — all subsequent operations require it
+2. **Distinguish payment from payout** — collect uses payment, send uses payout; fields and flows are completely different
+3. **Don't assume synchronous completion** — crypto operations are async; poll or use webhooks
+4. **Surface key information proactively** — orderId, paymentUrl, fees, status changes
+5. **Check balance before payout** — confirm `availableBalance` is sufficient first
+6. **Payout address must match network** — Ethereum address → ethereum network, Tron address → tron network
+
+## Protocol Stack
+
+This Skill's position in the Timar payment protocol stack:
+
+| Layer | Protocol/Component | Role | Status |
+|-------|-------------------|------|--------|
+| L4 | TAP (Visa-style) | Identity & Trust | Planned |
+| L3 | AP2 (Google-style) | Authorization & Governance | Planned |
+| L2 | ACP (Stripe × OpenAI) | Discovery & Commerce | Planned |
+| L1 | **X402 (Coinbase)** | **Payment Protocol Adapter** | ✅ Live |
+| L0 | **MCP (TimarAIMCP)** | **Capability Execution** | ✅ Live |
+| — | **Skill (this file)** | **AI Trigger & Guide** | ✅ This file |
+
+## Detailed Reference Documentation
+
+For deeper technical details, refer to these documents:
+
+### Quick Navigation
+- [Integration Router](docs/skill/hub/integration-router.md) — Choose the right capability path
+- [Domain Map](docs/skill/hub/domain-map.md) — All published capability domains overview
+
+### Capability Details
+- [Payment](docs/mcp/capabilities/payment.md) — Full payment capability spec
+- [Payout](docs/mcp/capabilities/payout.md) — Full payout capability spec
+- [Balance](docs/mcp/capabilities/balance.md) — Full balance capability spec
+- [Notifications](docs/mcp/capabilities/notifications.md) — Webhook handling guidance
+
+### Shared Rules
+- [Auth & Signing](docs/skill/domains/shared/auth-signing.md) — Signature mechanics
+- [Error Handling](docs/skill/domains/shared/error-handling.md) — Error conventions
+- [Response Conventions](docs/skill/domains/shared/response-conventions.md) — Response patterns
+
+### References & Examples
+- [Endpoints](docs/skill/references/crypto/endpoints.md) — All API endpoints
+- [Request/Response Models](docs/skill/references/crypto/request-response-models.md) — Exact field specs
+- [Status Codes](docs/skill/references/crypto/statuses.md) — Status mappings
+- [Integration Checklist](docs/skill/references/crypto/integration-checklist.md) — Pre-launch checklist
+- [cURL Examples](docs/skill/examples/crypto/curl/) — Command-line examples
+- [Node.js Examples](docs/skill/examples/crypto/nodejs/) — Node.js code examples

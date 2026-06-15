@@ -6,7 +6,7 @@ This file explains where documentation belongs in `TimarAISkill` and how the rep
 
 ## Root files
 
-- `README.md`: repository entrypoint and high-level purpose
+- `README.md`: repository entrypoint and MCP-first positioning
 - `CONTRIBUTING.md`: contributor rules and update expectations
 - `CHANGELOG.md`: notable repository and documentation changes
 
@@ -14,12 +14,32 @@ This file explains where documentation belongs in `TimarAISkill` and how the rep
 
 The `docs/` directory contains two kinds of content:
 
+- MCP-first public documentation under `docs/mcp/`
 - public AI-facing documentation under `docs/skill/`
 - repository-maintenance support documents such as specs, plans, and workflow references
+
+## `docs/mcp/`
+
+`docs/mcp/` is the MCP-first public documentation home.
+
+Its role is to provide:
+
+- MCP overview
+- environment guidance
+- auth and signing guidance
+- capability routing for payment, payout, balance, and notifications
+
+It stays high-level in phase one and routes readers into current published fact and domain documents when exact contract detail is needed.
 
 ## `docs/skill/`
 
 `docs/skill/` is the main public documentation tree for external integrators and AI coding assistants.
+
+In the current architecture framing:
+
+- MCP is the capability base
+- `docs/skill/` is the AI-facing public guidance layer for using MCP-backed capabilities
+- `skill`, `x402`, and future protocol surfaces are upper-layer adapters or trigger paths
 
 Current language model:
 
@@ -31,14 +51,14 @@ Current language model:
 
 ### `hub/`
 
-Use `hub/` for entry routing, reading order, and domain navigation.
+Use `hub/` for entry routing, reading order, and MCP capability navigation.
 
 ### `domains/`
 
-Use `domains/` for task-oriented guidance and business-flow instructions.
+Use `domains/` for task-oriented guidance and current published capability flows.
 
-- `domains/shared/`: cross-domain rules
-- `domains/crypto/`: current published crypto domain
+- `domains/shared/`: cross-capability rules
+- `domains/crypto/`: current published crypto capability domain
 - `domains/fiat/`: reserved future domain
 
 ### `references/`
@@ -70,7 +90,8 @@ Use `docs/plans/` for implementation plans derived from approved specs.
 
 - `crypto` is the current published domain.
 - `fiat` remains reserved for future release.
-- Future public domains should reuse the same `hub / domains / references / examples` structure instead of introducing a new layout.
+- future public domains should reuse the same `hub / domains / references / examples` structure
+- future protocol adapters should route into MCP rather than define separate business cores
 
 ## Placement rule
 
