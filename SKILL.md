@@ -1,314 +1,345 @@
-# Timar AI Payment & Payout Skill
+# Timar Payment Skill
 
-> **Skill Layer** — triggers and guides AI assistants to invoke Timar capabilities through MCP.
+> **一份 SKILL，任何 AI Agent 都能用 X402 协议调用 Timar 支付能力。**
 
-## Architecture
+## 这是什么
+
+本文件是一份 AI Agent 可读的技能指令。任何支持 X402 协议的 AI Agent 读取本文件后，即可通过 HTTP + 稳定币按次付费的方式调用 Timar 支付、代付和余额查询能力。
+
+**你不需要部署任何服务，不需要 API Key，不需要注册账号。** X402 协议自动处理认证和付费。
+
+## 架构
 
 ```
-┌─────────────────────────────────────┐
-│    Skill (this file)                │  ← AI-facing trigger & guide layer
-│    Understand intent → Route        │
-└──────────────┬──────────────────────┘
-               │ invoke via MCP protocol
+┌───────────────────────────────┐
+│   任何 AI Agent               │  ← 读取这份 SKILL
+│   (Claude / GPT / Cursor / …) │
+└──────────────┬────────────────┘
+               │ HTTP + USDC 支付 (X402 协议)
                ▼
-┌─────────────────────────────────────┐
-│      TimarAIMCP (MCP Server)        │  ← Capability execution layer
-│   payment / payout / balance tools  │
-└──────────────┬──────────────────────┘
-               │ HTTP + HMAC-SHA256 sign
+┌───────────────────────────────┐
+│   X402 适配层                  │  ← 已部署，你不需要管
+│   (TimarAIMCP + X402)         │
+└──────────────┬────────────────┘
+               │ MCP 工具调用 + HMAC 签名
                ▼
-┌─────────────────────────────────────┐
-│       Timar Public API              │  ← Business backend
-│   /api/v2/digital/*                 │
-└─────────────────────────────────────┘
+┌───────────────────────────────┐
+│   Timar 公共 API               │  ← 已部署
+│   /api/v2/digital/*           │
+└───────────────────────────────┘
 ```
 
-### Alternative Entry: X402 Protocol Adapter
+**你只需要关心：向 X402 端点发 HTTP 请求，付费即可获得结果。**
 
-For AI Agents that prefer **pay-per-use HTTP access** (stablecoin payments), the X402 adapter provides the same capabilities through HTTP endpoints:
+## 端点一览
+
+| 方法 | 端点 | 对应能力 | 价格 (USDC) |
+|------|------|---------|------------|
+| `POST` | `/v1/payment/create` | 创建支付订单（收款） | $0.01 |
+| `GET` | `/v1/payment/{orderId}` | 查询支付订单状态 | $0.001 |
+| `DELETE` | `/v1/payment/{orderId}` | 取消支付订单 | $0.001 |
+| `POST` | `/v1/payout/create` | 创建代付订单（付款） | $0.01 |
+| `GET` | `/v1/payout/{orderId}` | 查询代付订单状态 | $0.001 |
+| `GET` | `/v1/balance` | 查询账户余额 | $0.001 |
+
+**免费端点（无需付费）：**
+
+| 方法 | 端点 | 说明 |
+|------|------|------|
+| `GET` | `/health` | 服务健康检查 |
+| `GET` | `/v1/tools` | 列出所有可用工具和价格 |
+
+## 支付网络和资产
+
+| 网络 | 链 | 支付资产 |
+|------|-----|---------|
+| `base` | Base (推荐，低 gas) | USDC |
+| `ethereum` | Ethereum | USDC |
+| `solana` | Solana | USDC (EPjFWdd5…) |
+
+## 如何调用（X402 协议流程）
+
+### 第 1 步：发请求 → 收到 402
 
 ```
-┌─────────────────────────────────────┐
-│   AI Agent (x402 client)            │  ← Pays per call with USDC
-└──────────────┬──────────────────────┘
-               │ HTTP + x402 payment
-               ▼
-┌─────────────────────────────────────┐
-│   X402 Protocol Adapter             │  ← HTTP server, payment middleware
-│   npm run start:x402                │     (routes to same MCP tools)
-└──────────────┬──────────────────────┘
-               │ same MCP routers
-               ▼
-┌─────────────────────────────────────┐
-│      TimarAIMCP (MCP Routers)       │  ← Capability execution layer
-└──────────────┬──────────────────────┘
-               │ HTTP + HMAC-SHA256 sign
-               ▼
-┌─────────────────────────────────────┐
-│       Timar Public API              │
-└─────────────────────────────────────┘
+POST /v1/payment/create HTTP/1.1
+Host: {x402-server}
+Content-Type: application/json
+
+{
+  "merchantOrderId": "order-001",
+  "merchantUserId": "user-123",
+  "amount": 100,
+  "currency": "USDT",
+  "network": "ethereum"
+}
 ```
 
-| Entry Mode | Transport | Auth | Best For |
-|------------|-----------|------|----------|
-| **Skill → MCP** | STDIO | API Key + Secret | Local AI assistants (Claude, Cursor) |
-| **X402 Adapter** | HTTP | Stablecoin payment per call | Autonomous AI Agents, pay-per-use |
+服务器返回 `402 Payment Required`，并在 `PAYMENT-REQUIRED` header 中告知：
+- 需要支付多少 USDC
+- 支付到哪个钱包地址
+- 支持哪些网络
 
-**You are in the Skill layer.** Your job is to understand user intent, select the right MCP tool, format correct parameters, and interpret results for the user. You do NOT call Timar APIs directly — you call MCP tools, and the MCP server handles signing, routing, and API communication.
+### 第 2 步：支付 → 重发请求
 
-## Prerequisites
+Agent 用钱包支付指定金额的 USDC，获取支付凭证后，在重发请求时带上 `PAYMENT-SIGNATURE` header：
 
-Before using any MCP tool, confirm:
+```
+POST /v1/payment/create HTTP/1.1
+Host: {x402-server}
+Content-Type: application/json
+PAYMENT-SIGNATURE: {payment-proof}
 
-1. The MCP server (`TimarAIMCP`) is running and connected to this session.
-2. Credentials are configured (apiKey, secretKey) in the MCP server config.
-3. The target environment (sandbox/production) is set.
-
-If MCP tools are not available, instruct the user to:
-```bash
-# Clone and configure TimarAIMCP
-git clone <repo-url> TimarAIMCP && cd TimarAIMCP && npm install
-
-# Run interactive setup wizard (supports zh-CN / zh-TW / en)
-npm run setup
-
-# Add to your AI client config pointing to scripts/start-stdio-server.mjs
+{
+  "merchantOrderId": "order-001",
+  "merchantUserId": "user-123",
+  "amount": 100,
+  "currency": "USDT",
+  "network": "ethereum"
+}
 ```
 
-## Available MCP Tools
+### 第 3 步：收到业务结果
 
-### 1. `payment.create` — Create a payment (collection) order
+支付验证通过后，服务器返回 200 + 业务结果：
 
-**Use when:** The user wants to receive crypto payment from a customer.
+```json
+{
+  "ok": true,
+  "data": {
+    "orderId": "pay_abc123",
+    "status": "PENDING",
+    "paymentUrl": "https://pay.timar.io/abc123",
+    "receiveAddress": "0x...",
+    "expiresInSeconds": 1800
+  }
+}
+```
 
-**Required parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `environment` | string | `sandbox` or `production` |
-| `merchantOrderId` | string | Your unique order ID |
-| `merchantUserId` | string | Your user identifier |
-| `amount` | number | Payment amount |
-| `currency` | string | Currency code (e.g., `USDT`) |
-| `network` | string | Blockchain network (e.g., `ethereum`, `tron`) |
-
-**Optional parameters:**
-| Parameter | Description |
-|-----------|-------------|
-| `returnUrl` | URL to redirect after payment |
-| `cancelUrl` | URL to redirect on cancel |
-
-**Key response fields to surface to user:**
-- `orderId` — Platform order ID (save this!)
-- `paymentUrl` — Payment page URL for customer
-- `receiveAddress` — Deposit address
-- `expiresInSeconds` — How long until expiry
-
-**Common mistakes to avoid:**
-- Do not invent `callbackUrl` — it is not a public field
-- Do not confuse `merchantOrderId` with platform `orderId`
-- Do not mix `currency` and `network` into one field
-- Do not display expired payment links (check `expiresInSeconds`)
+> **如果你的 Agent 框架已内置 X402 支持**（如 Coinbase AgentKit），步骤 2-3 会自动完成，你只需发请求即可。
 
 ---
 
-### 2. `payment.get` — Query a payment order status
+## 工具详细说明
 
-**Use when:** User wants to check status of an existing payment order.
+### 1. `POST /v1/payment/create` — 创建支付订单（收款）
 
-**Required parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `environment` | string | `sandbox` or `production` |
-| `orderId` | string | Platform `orderId` (NOT merchantOrderId) |
+**场景：** 用户要从客户那里收加密货币。
 
-**Key response fields:**
-- `status`: `PENDING` | `SUCCESS` | `CANCEL` | `RISK`
-- `paidAmount` — Actual paid amount
-- `fee` / `feeCurrency`
-- `depositDetails` — On-chain deposit info
+**请求体：**
 
----
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `merchantOrderId` | string | ✅ | 你的唯一订单 ID |
+| `merchantUserId` | string | ✅ | 你的用户标识 |
+| `amount` | number | ✅ | 金额 |
+| `currency` | string | ✅ | 币种，如 `USDT`、`USDC` |
+| `network` | string | ✅ | 区块链网络，如 `ethereum`、`tron`、`base` |
+| `returnUrl` | string | ❌ | 支付完成后跳转 URL |
+| `cancelUrl` | string | ❌ | 取消支付时跳转 URL |
 
-### 3. `payment.cancel` — Cancel a payment order
+**关键字段解读：**
+- `orderId` — 平台订单号（**务必保存，后续查询/取消都用它**）
+- `paymentUrl` — 给客户的支付页面链接
+- `receiveAddress` — 充值地址
+- `expiresInSeconds` — 过期倒计时
 
-**Use when:** User wants to cancel an unpaid payment order.
-
-**Required parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `environment` | string | `sandbox` or `production` |
-| `orderId` | string | Platform `orderId` |
-
-**Note:** Use platform `orderId`, never `merchantOrderId`.
-
----
-
-### 4. `payout.create` — Create a payout (withdrawal) order
-
-**Use when:** The user wants to send crypto to an external wallet address.
-
-**Required parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `environment` | string | `sandbox` or `production` |
-| `merchantOrderId` | string | Your unique order ID |
-| `merchantUserId` | string | Your user identifier |
-| `amount` | number | Payout amount |
-| `currency` | string | Currency code |
-| `network` | string | Blockchain network |
-| `withdrawAddress` | string | Destination wallet address |
-
-**Key response fields to surface to user:**
-- `orderId` — Platform order ID (save this!)
-- `fee` — Total fee deducted
-- `txId` — Transaction ID (may be pending)
-
-**Critical notes:**
-- `withdrawAddress` MUST match the selected `network`
-- This does NOT replace your own approval/risk-control logic
-- A successful creation response does NOT mean payout is complete — poll or use webhooks
-
-**Common mistakes to avoid:**
-- Missing `withdrawAddress` or address/network mismatch
-- Treating payout as a mirror of payment (different fields, different flow)
-- Including `returnUrl` or `cancelUrl` (those are payment-only)
-- Assuming create success = payout complete
+**常见错误：**
+- ❌ 不要编造 `callbackUrl` 字段
+- ❌ 不要混淆 `merchantOrderId`（你的）和 `orderId`（平台的）
+- ❌ 不要把 `currency` 和 `network` 写成一个字段
+- ❌ 不要展示已过期的 `paymentUrl`（先检查 `expiresInSeconds`）
 
 ---
 
-### 5. `payout.get` — Query a payout order status
+### 2. `GET /v1/payment/{orderId}` — 查询支付状态
 
-**Use when:** User wants to check status of an existing payout order.
+**场景：** 用户想查某个支付订单的状态。
 
-**Required parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `environment` | string | `sandbox` or `production` |
-| `orderId` | string | Platform `orderId` |
+**路径参数：**
+- `orderId` — 平台订单号（**不是** merchantOrderId）
 
-**Key response fields:**
-- `status` — Numeric status code (reference status table)
-- `totalFee` / `networkFee` / `serviceFee`
-- `txId` — On-chain transaction hash
-- `sourceAddress` / `withdrawAddress`
+**查询参数：**
 
----
+| 字段 | 说明 |
+|------|------|
+| `environment` | `sandbox` 或 `production`（可选） |
 
-### 6. `balance.list` — Query account balances
-
-**Use when:** User wants to check their wallet balances.
-
-**Required parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `environment` | string | `sandbox` or `production` |
-
-**Response fields per currency item:**
-- `currency` — Currency code
-- `availableBalance` — Usable balance (for new operations)
-- `lockedBalance` — Frozen/reserved balance
-- `totalBalance` — Sum of both
-
-**Important:** Use `availableBalance` for spending decisions, NOT `totalBalance`. Do not use balance query as your only concurrency control mechanism.
+**关键字段解读：**
+- `status`: `PENDING` → 待支付 | `SUCCESS` → 已完成 | `CANCEL` → 已取消 | `RISK` → 风控拦截
+- `paidAmount` — 实际支付金额
+- `fee` / `feeCurrency` — 手续费
+- `depositDetails` — 链上充值信息
 
 ---
 
-## Decision Flowchart
+### 3. `DELETE /v1/payment/{orderId}` — 取消支付订单
 
-When user mentions payment/payout/balance:
+**场景：** 用户要取消一个未支付的订单。
+
+**路径参数：**
+- `orderId` — 平台订单号
+
+**查询参数：**
+
+| 字段 | 说明 |
+|------|------|
+| `environment` | `sandbox` 或 `production`（可选） |
+
+**注意：** 只能取消状态为 `PENDING` 的订单。
+
+---
+
+### 4. `POST /v1/payout/create` — 创建代付订单（付款到外部钱包）
+
+**场景：** 用户要把加密货币打到外部钱包地址。
+
+**请求体：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `merchantOrderId` | string | ✅ | 你的唯一订单 ID |
+| `merchantUserId` | string | ✅ | 你的用户标识 |
+| `amount` | number | ✅ | 金额 |
+| `currency` | string | ✅ | 币种 |
+| `network` | string | ✅ | 区块链网络 |
+| `withdrawAddress` | string | ✅ | 目标钱包地址 |
+
+**关键字段解读：**
+- `orderId` — 平台订单号（**务必保存**）
+- `fee` — 扣除的总手续费
+- `txId` — 链上交易哈希（可能还在处理中）
+
+**常见错误：**
+- ❌ `withdrawAddress` 必须和 `network` 匹配（Ethereum 地址不能选 Tron 网络）
+- ❌ 不要把 payout 当作 payment 的镜像（字段不同、流程不同）
+- ❌ 不要包含 `returnUrl` / `cancelUrl`（这是 payment 才有的）
+- ❌ **创建成功 ≠ 代付完成**，需要查询状态确认到账
+
+---
+
+### 5. `GET /v1/payout/{orderId}` — 查询代付状态
+
+**场景：** 用户想查某个代付订单的状态。
+
+**路径参数：**
+- `orderId` — 平台订单号
+
+**查询参数：**
+
+| 字段 | 说明 |
+|------|------|
+| `environment` | `sandbox` 或 `production`（可选） |
+
+**关键字段解读：**
+- `status` — 数值状态码（参考状态表）
+- `totalFee` / `networkFee` / `serviceFee` — 费用明细
+- `txId` — 链上交易哈希
+- `sourceAddress` / `withdrawAddress` — 源地址 / 目标地址
+
+---
+
+### 6. `GET /v1/balance` — 查询账户余额
+
+**场景：** 用户想看自己的钱包余额。
+
+**查询参数：**
+
+| 字段 | 说明 |
+|------|------|
+| `environment` | `sandbox` 或 `production`（可选） |
+
+**响应字段（每个币种一条）：**
+- `currency` — 币种
+- `availableBalance` — 可用余额（**用于判断能否操作**）
+- `lockedBalance` — 冻结余额
+- `totalBalance` — 总余额
+
+**注意：** 用 `availableBalance` 做支出判断，**不要**用 `totalBalance`。
+
+---
+
+## 决策流程图
 
 ```
-User says "pay" or "收单" or "充值"
-  → Is this receiving money FROM a customer?
-    → YES → payment.create
-    → NO  → Continue below
+用户提到 "收款" / "收单" / "充值" / "pay" / "receive"
+  → 是从客户那里收钱吗？
+    → 是 → POST /v1/payment/create
+    → 不是 → 继续判断
 
-User says "withdraw" or "代付" or "提现" or "send"
-  → Is this sending money TO an external wallet?
-    → YES → payout.create
-    → NO  → Ask for clarification
+用户提到 "付款" / "代付" / "提现" / "withdraw" / "send"
+  → 是往外部钱包打钱吗？
+    → 是 → POST /v1/payout/create
+    → 不是 → 询问澄清
 
-User says "check" or "query" or "查询" or "balance"
-  → Has orderId mentioned?
-    → YES → payment.get OR payout.get (determine by context)
-    → NO  → balance.list
+用户提到 "查询" / "状态" / "check" / "query"
+  → 有 orderId 吗？
+    → 有 → 是支付还是代付？→ GET /v1/payment/{orderId} 或 GET /v1/payout/{orderId}
+    → 没有 → GET /v1/balance
 
-User says "cancel"
-  → Has orderId mentioned?
-    → YES → payment.cancel
-    → NO  → Ask for orderId
+用户提到 "取消" / "cancel"
+  → 有 orderId 吗？
+    → 有 → DELETE /v1/payment/{orderId}
+    → 没有 → 询问 orderId
 ```
 
-## Error Handling
+## 错误处理
 
-When an MCP tool returns an error:
+当请求返回错误时，按以下顺序排查：
 
-1. **Check environment**: Is the user targeting sandbox or production?
-2. **Check credentials**: Are apiKey/secretKey correctly configured?
-3. **Check required fields**: Are all mandatory params present?
-4. **Check field values**: Is currency valid? Does network match address?
-5. **Check orderId**: Using `merchantOrderId` instead of platform `orderId`?
+1. **402 支付失败** → 检查钱包余额、网络是否正确
+2. **认证失败** → X402 支付凭证无效，重新获取
+3. **参数错误** → 检查必填字段是否完整
+4. **字段值错误** → currency 是否有效？network 和地址是否匹配？
+5. **orderId 不存在** → 确认使用的是平台 orderId 而非 merchantOrderId
+6. **余额不足** → 先用 GET /v1/balance 查询可用余额
+7. **风控拦截** → 状态为 RISK，需联系支持
 
-Common error categories:
-- Auth failure → credentials issue
-- Validation error → missing/wrong fields
-- Not found → wrong orderId
-- Insufficient balance → check with `balance.list` first
-- Risk blocked → contact support
+## 最佳实践
 
-## Best Practices
+1. **创建后务必保存 `orderId`** — 后续所有操作都靠它
+2. **区分 payment 和 payout** — 收款用 payment，付款用 payout，字段和流程完全不同
+3. **不要假设同步完成** — 加密货币操作是异步的，创建成功后需要轮询或使用 webhook
+4. **主动展示关键信息** — orderId、paymentUrl、手续费、状态变化
+5. **先查余额再操作** — 发起 payout 前先确认 availableBalance 足够
+6. **payout 地址必须匹配网络** — Ethereum 地址选 ethereum 网络，Tron 地址选 tron 网络
 
-### For AI Assistants
+## 协议栈
 
-1. **Always confirm environment before action** — especially for production operations
-2. **Save platform `orderId` after create** — needed for all subsequent queries
-3. **Distinguish payment vs payout** — they have different fields and flows
-4. **Don't assume sync completion** — crypto operations are async
-5. **Surface key info proactively** — orderId, paymentUrl, fees, status
+本 Skill 在 Timar 支付协议栈中的位置：
 
-### For Integration Developers
+| 层级 | 协议/组件 | 角色 | 状态 |
+|------|----------|------|------|
+| L4 | TAP (Visa-style) | 身份与信任 | 规划中 |
+| L3 | AP2 (Google-style) | 授权与治理 | 规划中 |
+| L2 | ACP (Stripe × OpenAI) | 发现与商务 | 规划中 |
+| L1 | **X402 (Coinbase)** | **支付协议适配** | ✅ 已实现 |
+| L0 | **MCP (TimarAIMCP)** | **能力执行** | ✅ 已实现 |
+| — | **Skill (本文件)** | **AI 触发与引导** | ✅ 本文件 |
 
-1. Read the detailed domain docs under `docs/skill/domains/crypto/`
-2. Check integration checklist at `docs/skill/references/crypto/integration-checklist.md`
-3. Reference exact request/response models at `docs/skill/references/crypto/request-response-models.md`
-4. Review signature examples at `docs/skill/references/shared/signature-examples.md`
+## 详细参考文档
 
-## Protocol Stack Context
+如需更深入的技术细节，请参考以下文档：
 
-This Skill sits above the MCP layer in the Timar payment protocol stack:
+### 快速导航
+- [集成路由](docs/skill/hub/integration-router.md) — 选择正确的能力路径
+- [域地图](docs/skill/hub/domain-map.md) — 所有已发布能力域总览
 
-| Layer | Protocol/Component | Role | Status |
-|-------|-------------------|------|--------|
-| L4 | TAP (Visa-style) | Identity & Trust | Future |
-| L3 | AP2 (Google-style) | Authorization & Governance | Future |
-| L2 | ACP (Stripe x OpenAI) | Discovery & Commerce | Future |
-| L1 | x402 (Coinbase) | Payment Protocol Adapter | Future |
-| L0 | **MCP (TimarAIMCP)** | **Capability Execution** | ✅ Done |
-| — | **Skill (this file)** | **AI Trigger & Guide** | ✅ This file |
+### 能力详情
+- [支付](docs/mcp/capabilities/payment.md) — 支付能力完整规格
+- [代付](docs/mcp/capabilities/payout.md) — 代付能力完整规格
+- [余额](docs/mcp/capabilities/balance.md) — 余额能力完整规格
+- [通知](docs/mcp/capabilities/notifications.md) — Webhook 处理指引
 
-Future protocol adapters (x402, etc.) will route through MCP rather than implementing business logic independently.
+### 共享规则
+- [认证与签名](docs/skill/domains/shared/auth-signing.md) — 签名机制
+- [错误处理](docs/skill/domains/shared/error-handling.md) — 错误规范
+- [响应约定](docs/skill/domains/shared/response-conventions.md) — 响应模式
 
-## Detailed Documentation
-
-For deeper reference, consult these documents in this repository:
-
-### Quick Navigation
-- [Integration Router](docs/skill/hub/integration-router.md) — Choose the right capability path
-- [Domain Map](docs/skill/hub/domain-map.md) — All published domains overview
-
-### Capability Details
-- [Payment](docs/mcp/capabilities/payment.md) — Full payment capability spec
-- [Payout](docs/mcp/capabilities/payout.md) — Full payout capability spec
-- [Balance](docs/mcp/capabilities/balance.md) — Full balance capability spec
-- [Notifications](docs/mcp/capabilities/notifications.md) — Webhook handling guidance
-
-### Shared Rules
-- [Auth & Signing](docs/skill/domains/shared/auth-signing.md) — Signature mechanics
-- [Error Handling](docs/skill/domains/shared/error-handling.md) — Error conventions
-- [Response Conventions](docs/skill/domains/shared/response-conventions.md) — Response patterns
-
-### References
-- [Endpoints](docs/skill/references/crypto/endpoints.md) — All API endpoints
-- [Request/Response Models](docs/skill/references/crypto/request-response-models.md) — Exact field specs
-- [Status Codes](docs/skill/references/crypto/statuses.md) — Status mappings
-- [Integration Checklist](docs/skill/references/crypto/integration-checklist.md) — Pre-launch checklist
+### 参考资料与示例
+- [端点列表](docs/skill/references/crypto/endpoints.md) — 所有 API 端点
+- [请求/响应模型](docs/skill/references/crypto/request-response-models.md) — 精确字段规格
+- [状态码](docs/skill/references/crypto/statuses.md) — 状态映射
+- [集成检查清单](docs/skill/references/crypto/integration-checklist.md) — 上线前检查
+- [cURL 示例](docs/skill/examples/crypto/curl/) — 命令行示例
+- [Node.js 示例](docs/skill/examples/crypto/nodejs/) — Node.js 代码示例
