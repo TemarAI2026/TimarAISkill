@@ -33,14 +33,17 @@ This file is an AI Agent-readable skill instruction. Any AI Agent that supports 
 
 ## Endpoint Overview
 
-| Method | Endpoint | Capability | Price (USDC) |
-|--------|----------|------------|--------------|
-| `POST` | `/v1/payment/create` | Create payment order (collect) | $0.01 |
-| `GET` | `/v1/payment/{orderId}` | Query payment order status | $0.001 |
-| `DELETE` | `/v1/payment/{orderId}` | Cancel payment order | $0.001 |
-| `POST` | `/v1/payout/create` | Create payout order (send) | $0.01 |
-| `GET` | `/v1/payout/{orderId}` | Query payout order status | $0.001 |
-| `GET` | `/v1/balance` | Query account balances | $0.001 |
+| Method | Endpoint | Capability | X402 Payment Mode |
+|--------|----------|------------|-------------------|
+| `POST` | `/v1/payment/create` | Create payment order (collect) | **Dynamic** — X402 amount = actual transfer amount, payTo = `to` field |
+| `GET` | `/v1/payment/{orderId}` | Query payment order status | None — MCP API Key auth |
+| `DELETE` | `/v1/payment/{orderId}` | Cancel payment order | None — MCP API Key auth |
+| `POST` | `/v1/payout/create` | Create payout order (send) | **Dynamic** — X402 amount = actual payout amount, payTo = `withdrawAddress` |
+| `GET` | `/v1/payout/{orderId}` | Query payout order status | None — MCP API Key auth |
+| `GET` | `/v1/balance` | Query account balances | None — MCP API Key auth |
+
+> **X402 only for transfer operations:** `payment.create` and `payout.create` use X402 as the actual business transfer. The Agent pays USDC directly to the recipient using the user-authorized wallet.
+> Query/cancel operations are protected by MCP-layer API Key auth and forwarded directly with no payment required.
 
 **Free endpoints (no payment required):**
 
@@ -59,9 +62,17 @@ This file is an AI Agent-readable skill instruction. Any AI Agent that supports 
 
 ## How to Call (X402 Protocol Flow)
 
-### Step 1: Send Request → Receive 402
+### Prerequisite: User authorizes wallet to Agent
 
-```
+Before calling any payment endpoint, the user must grant the Agent control (or signing permission) over their wallet. This is the prerequisite for X402. The implementation depends on your Agent framework (e.g. Coinbase AgentKit, Lit Protocol, etc.).
+
+---
+
+### `payment.create` — Dynamic Payment Flow
+
+#### Step 1: Send Request → Receive 402 (server returns actual transfer params)
+
+```http
 POST /v1/payment/create HTTP/1.1
 Host: {x402-server}
 Content-Type: application/json
@@ -69,15 +80,88 @@ Content-Type: application/json
 {
   "merchantOrderId": "order-001",
   "merchantUserId": "user-123",
+  "to": "0xRecipientWalletAddress",
   "amount": 100,
   "currency": "USDT",
-  "network": "ethereum"
+  "network": "base"
 }
 ```
 
-The server returns `402 Payment Required` with a `PAYMENT-REQUIRED` header containing:
-- How much USDC to pay
-- Which wallet address to pay to
+The server returns `402 Payment Required` with body:
+
+```json
+{
+  "x402Version": 1,
+  "accepts": [{
+    "scheme": "exact",
+    "network": "base",
+    "maxAmountRequired": "100",
+    "payTo": "0xRecipientWalletAddress",
+    "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "description": "Pay the recipient to complete this transfer"
+  }],
+  "error": "Payment required"
+}
+```
+
+> ⚠️ Note: `payTo` = your request's `to` field (the actual recipient). `maxAmountRequired` = the amount to transfer. **This is NOT Timar's wallet — it's paid directly to the recipient.**
+
+#### Step 2: Agent pays using user-authorized wallet
+
+The Agent calls a wallet SDK (e.g. `viem`, `ethers.js`, Coinbase SDK):
+- Transfer `maxAmountRequired` USDC to `payTo` address
+- Obtain on-chain proof (tx hash / payment proof)
+- Construct the `X-PAYMENT` header
+
+#### Step 3: Retry with payment proof
+
+```http
+POST /v1/payment/create HTTP/1.1
+Host: {x402-server}
+Content-Type: application/json
+X-PAYMENT: {base64-encoded-payment-proof}
+
+{
+  "merchantOrderId": "order-001",
+  "merchantUserId": "user-123",
+  "to": "0xRecipientWalletAddress",
+  "amount": 100,
+  "currency": "USDT",
+  "network": "base"
+}
+```
+
+#### Step 4: Receive business result
+
+Server verifies on-chain proof → calls Timar API → returns 200:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "orderId": "pay_abc123",
+    "status": "SUCCESS",
+    "txId": "0xOnChainTxHash",
+    "amount": 100,
+    "currency": "USDT"
+  }
+}
+```
+
+---
+
+### Read/Cancel endpoints — Direct call (no X402)
+
+These endpoints (`GET /payment/:id`, `DELETE /payment/:id`, `GET /payout/:id`, `GET /balance`) require **no payment**. The MCP layer handles authentication via API Key. Just send the request directly:
+
+```http
+GET /v1/payment/pay_abc123 HTTP/1.1
+Host: {x402-server}
+```
+
+The server forwards the request to MCP and returns the result immediately — no 402 handshake, no wallet needed.
+
+> **If your Agent framework has built-in X402 support** (e.g. Coinbase AgentKit), it will automatically skip the payment handshake when the server returns 200 directly.
 - Which networks are supported
 
 ### Step 2: Pay → Resend Request

@@ -33,14 +33,17 @@
 
 ## 端点一览
 
-| 方法 | 端点 | 对应能力 | 价格 (USDC) |
-|------|------|---------|------------|
-| `POST` | `/v1/payment/create` | 创建支付订单（收款） | $0.01 |
-| `GET` | `/v1/payment/{orderId}` | 查询支付订单状态 | $0.001 |
-| `DELETE` | `/v1/payment/{orderId}` | 取消支付订单 | $0.001 |
-| `POST` | `/v1/payout/create` | 创建代付订单（付款） | $0.01 |
-| `GET` | `/v1/payout/{orderId}` | 查询代付订单状态 | $0.001 |
-| `GET` | `/v1/balance` | 查询账户余额 | $0.001 |
+| 方法 | 端点 | 对应能力 | X402 支付模式 |
+|------|------|---------|--------------|
+| `POST` | `/v1/payment/create` | 创建支付订单（收款） | **动态** — X402 金额 = 实际转账金额，收款方 = `to` 字段 |
+| `GET` | `/v1/payment/{orderId}` | 查询支付订单状态 | 无需支付，MCP API Key 鉴权 |
+| `DELETE` | `/v1/payment/{orderId}` | 取消支付订单 | 无需支付，MCP API Key 鉴权 |
+| `POST` | `/v1/payout/create` | 创建代付订单（付款） | **动态** — X402 金额 = 实际代付金额，收款方 = `withdrawAddress` |
+| `GET` | `/v1/payout/{orderId}` | 查询代付订单状态 | 无需支付，MCP API Key 鉴权 |
+| `GET` | `/v1/balance` | 查询账户余额 | 无需支付，MCP API Key 鉴权 |
+
+> **X402 只用于转账操作：** `payment.create` 和 `payout.create` 的 X402 是实际业务转账本身，Agent 用用户授权钱包直接打 USDC 给收款方。
+> 查询/取消操作由 MCP 层的 API Key 鉴权保护，直接透传，无需额外付款。
 
 **免费端点（无需付费）：**
 
@@ -59,9 +62,17 @@
 
 ## 如何调用（X402 协议流程）
 
-### 第 1 步：发请求 → 收到 402
+### 前提：用户授权钱包给 Agent
 
-```
+在调用任何支付端点前，用户需将钱包控制权（或签名权限）授权给 Agent。这是 X402 的前提条件，具体实现取决于你的 Agent 框架（如 Coinbase AgentKit、Lit Protocol 等）。
+
+---
+
+### `payment.create` — 两阶段 X402 流程
+
+#### 第 1 步：发请求 → 服务器创建订单并返回 402
+
+```http
 POST /v1/payment/create HTTP/1.1
 Host: {x402-server}
 Content-Type: application/json
@@ -71,52 +82,79 @@ Content-Type: application/json
   "merchantUserId": "user-123",
   "amount": 100,
   "currency": "USDT",
-  "network": "ethereum"
+  "network": "base"
 }
 ```
 
-服务器返回 `402 Payment Required`，并在 `PAYMENT-REQUIRED` header 中告知：
-- 需要支付多少 USDC
-- 支付到哪个钱包地址
-- 支持哪些网络
+> ⚠️ **不需要传收款地址** — 收款地址由 Timar 系统生成。
 
-### 第 2 步：支付 → 重发请求
+服务器内部先调 Timar API 创建订单，拿到 `receiveAddress`，然后返回 `402`：
 
-Agent 用钱包支付指定金额的 USDC，获取支付凭证后，在重发请求时带上 `PAYMENT-SIGNATURE` header：
-
+```json
+{
+  "x402Version": 1,
+  "accepts": [{
+    "scheme": "exact",
+    "network": "base",
+    "maxAmountRequired": "100",
+    "payTo": "0xTimarReceiveAddress",
+    "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "description": "Pay 100 USDT to complete this payment (Order: pay_abc123)"
+  }],
+  "error": "Payment required"
+}
 ```
+
+> `payTo` = Timar 为本次订单生成的收款地址（来自 API 响应的 `receiveAddress` 字段）
+
+#### 第 2 步：Agent 用用户授权钱包完成链上支付
+
+Agent 调用钱包 SDK（如 `viem`、`ethers.js`、Coinbase SDK）：
+- 向 `payTo` 地址转 `maxAmountRequired` USDC
+- 获取链上交易凭证（tx hash / proof）
+- 构造 `X-PAYMENT` header
+
+#### 第 3 步：携带支付凭证重发请求
+
+```http
 POST /v1/payment/create HTTP/1.1
 Host: {x402-server}
 Content-Type: application/json
-PAYMENT-SIGNATURE: {payment-proof}
+X-PAYMENT: {base64-encoded-payment-proof}
 
 {
   "merchantOrderId": "order-001",
   "merchantUserId": "user-123",
   "amount": 100,
   "currency": "USDT",
-  "network": "ethereum"
+  "network": "base"
 }
 ```
 
-### 第 3 步：收到业务结果
+#### 第 4 步：收到业务结果
 
-支付验证通过后，服务器返回 200 + 业务结果：
+服务器验证链上凭证 → 调用 Timar API → 返回 200：
 
 ```json
 {
   "ok": true,
   "data": {
     "orderId": "pay_abc123",
-    "status": "PENDING",
-    "paymentUrl": "https://pay.timar.io/abc123",
-    "receiveAddress": "0x...",
-    "expiresInSeconds": 1800
+    "status": "SUCCESS",
+    "txId": "0x链上交易哈希",
+    "amount": 100,
+    "currency": "USDT"
   }
 }
 ```
 
-> **如果你的 Agent 框架已内置 X402 支持**（如 Coinbase AgentKit），步骤 2-3 会自动完成，你只需发请求即可。
+---
+
+### 查询/取消端点 — 固定服务费流程
+
+这些端点（`GET /payment/:id`、`DELETE /payment/:id`、`GET /balance` 等）采用固定 $0.001 USDC 服务费，收款方为 Timar 平台钱包。流程相同，只是 402 响应中的 `payTo` = Timar 平台地址，`maxAmountRequired` = "0.001"。
+
+> **如果你的 Agent 框架已内置 X402 支持**（如 Coinbase AgentKit），整个 402 握手会自动完成，你只需发一次请求即可。
 
 ---
 
