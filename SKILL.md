@@ -150,11 +150,18 @@ X-PAYMENT: {base64-encoded-payment-proof}
 
 ---
 
-### 查询/取消端点 — 固定服务费流程
+### 查询/取消端点 — 直接调用（无需 X402）
 
-这些端点（`GET /payment/:id`、`DELETE /payment/:id`、`GET /balance` 等）采用固定 $0.001 USDC 服务费，收款方为 Timar 平台钱包。流程相同，只是 402 响应中的 `payTo` = Timar 平台地址，`maxAmountRequired` = "0.001"。
+这些端点（`GET /payment/:id`、`DELETE /payment/:id`、`GET /payout/:id`、`GET /balance`）**无需付款**，由 MCP 层 API Key 鉴权。直接发请求即可：
 
-> **如果你的 Agent 框架已内置 X402 支持**（如 Coinbase AgentKit），整个 402 握手会自动完成，你只需发一次请求即可。
+```http
+GET /v1/payment/pay_abc123 HTTP/1.1
+Host: {x402-server}
+```
+
+服务器直接转发到 MCP 并返回结果，无需 402 握手，也不需要钱包。
+
+> **如果你的 Agent 框架已内置 X402 支持**（如 Coinbase AgentKit），当服务器直接返回 200 时，框架会自动跳过支付握手。
 
 ---
 

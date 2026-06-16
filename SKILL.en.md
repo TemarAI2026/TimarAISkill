@@ -193,7 +193,7 @@ After payment verification, the server returns 200 + business result:
   "data": {
     "orderId": "pay_abc123",
     "status": "PENDING",
-    "paymentUrl": "https://pay.timar.io/abc123",
+    "paymentUrl": "https://pay.temar.ai/abc123",
     "receiveAddress": "0x...",
     "expiresInSeconds": 1800
   }
