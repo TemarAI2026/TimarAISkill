@@ -35,7 +35,7 @@
 
 | 方法 | 端点 | 对应能力 | X402 支付模式 |
 |------|------|---------|--------------|
-| `POST` | `/v1/payment/create` | 创建支付订单（收款） | **动态** — X402 金额 = 实际转账金额，收款方 = `to` 字段 |
+| `POST` | `/v1/payment/create` | 创建支付订单（收款） | **动态** — X402 金额 = 实际转账金额，收款方 = Timar receiveAddress |
 | `GET` | `/v1/payment/{orderId}` | 查询支付订单状态 | 无需支付，MCP API Key 鉴权 |
 | `DELETE` | `/v1/payment/{orderId}` | 取消支付订单 | 无需支付，MCP API Key 鉴权 |
 | `POST` | `/v1/payout/create` | 创建代付订单（付款） | **动态** — X402 金额 = 实际代付金额，收款方 = `withdrawAddress` |
