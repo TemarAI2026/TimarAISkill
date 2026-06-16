@@ -2,7 +2,7 @@
 
 ## Positioning
 
-This directory is the public MCP documentation entrypoint for external integrators and AI coding assistants working with the Timar platform.
+This directory is the public MCP documentation entrypoint for external integrators and AI coding assistants working with the Temar platform.
 
 In the current architecture:
 
@@ -14,7 +14,7 @@ If a future integration surface needs payment capabilities, payout capabilities,
 
 ## Who this is for
 
-- external merchants or engineering teams integrating Timar open capabilities
+- external merchants or engineering teams integrating Temar open capabilities
 - developers using Codex, Claude Code, Cursor, or similar AI coding assistants
 - solution engineers who need a fast understanding of MCP capability boundaries and call paths
 

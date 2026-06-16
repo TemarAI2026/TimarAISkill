@@ -2,7 +2,7 @@
 
 ## Summary
 
-This design defines the next architecture direction for `TimarAISkill`: use MCP as the single open-integration capability base, then layer `skill`, `x402`, and future payment protocol adapters on top of it.
+This design defines the next architecture direction for `TemarAISkill`: use MCP as the single open-integration capability base, then layer `skill`, `x402`, and future payment protocol adapters on top of it.
 
 The goal is not to make `skill` the business core. The goal is to make MCP the only maintained open capability layer for runtime integration, while `skill`, `x402`, and future protocol surfaces become entry adapters that trigger or route into MCP.
 
@@ -81,7 +81,7 @@ Examples:
 - query balance
 - callback verification or consumption guidance
 
-These capabilities are exposed through MCP and documented through `TimarAISkill`.
+These capabilities are exposed through MCP and documented through `TemarAISkill`.
 
 ### 4. Internal platform implementation layer
 
@@ -181,7 +181,7 @@ It should not duplicate the capability logic already modeled in MCP.
 
 ## Documentation Consequences
 
-If this architecture is adopted, future `TimarAISkill` documentation should evolve toward MCP-centered public organization.
+If this architecture is adopted, future `TemarAISkill` documentation should evolve toward MCP-centered public organization.
 
 That means the repository should gradually include or reorganize around topics such as:
 
@@ -275,4 +275,4 @@ Mitigation:
 
 ## Next Step
 
-After this design is approved, create a follow-up implementation plan for updating the repository structure and top-level documentation so the MCP-first architecture becomes the new official framing inside `TimarAISkill`.
+After this design is approved, create a follow-up implementation plan for updating the repository structure and top-level documentation so the MCP-first architecture becomes the new official framing inside `TemarAISkill`.

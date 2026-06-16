@@ -11,7 +11,7 @@ Use this simple format for future entries:
 ## 2026-05-25
 
 - Scope: repository bootstrap
-  Summary: imported the standalone `docs/skill` public integration asset set into `TimarAISkill`.
+  Summary: imported the standalone `docs/skill` public integration asset set into `TemarAISkill`.
 
 - Scope: repository foundation design
   Summary: added the repository-foundation design and implementation plan for long-term skill-documentation maintenance.

@@ -1,10 +1,10 @@
-# Timar Payment Skill
+# Temar Payment Skill
 
-> **一份 SKILL，任何 AI Agent 都能用 X402 协议调用 Timar 支付能力。**
+> **一份 SKILL，任何 AI Agent 都能用 X402 协议调用 Temar 支付能力。**
 
 ## 这是什么
 
-本文件是一份 AI Agent 可读的技能指令。任何支持 X402 协议的 AI Agent 读取本文件后，即可通过 HTTP + 稳定币按次付费的方式调用 Timar 支付、代付和余额查询能力。
+本文件是一份 AI Agent 可读的技能指令。任何支持 X402 协议的 AI Agent 读取本文件后，即可通过 HTTP + 稳定币按次付费的方式调用 Temar 支付、代付和余额查询能力。
 
 **你不需要部署任何服务，不需要 API Key，不需要注册账号。** X402 协议自动处理认证和付费。
 
@@ -19,12 +19,12 @@
                ▼
 ┌───────────────────────────────┐
 │   X402 适配层                  │  ← 已部署，你不需要管
-│   (TimarAIMCP + X402)         │
+│   (TemarAIMCP + X402)         │
 └──────────────┬────────────────┘
                │ MCP 工具调用 + HMAC 签名
                ▼
 ┌───────────────────────────────┐
-│   Timar 公共 API               │  ← 已部署
+│   Temar 公共 API               │  ← 已部署
 │   /api/v2/digital/*           │
 └───────────────────────────────┘
 ```
@@ -35,7 +35,7 @@
 
 | 方法 | 端点 | 对应能力 | X402 支付模式 |
 |------|------|---------|--------------|
-| `POST` | `/v1/payment/create` | 创建支付订单（收款） | **动态** — X402 金额 = 实际转账金额，收款方 = Timar receiveAddress |
+| `POST` | `/v1/payment/create` | 创建支付订单（收款） | **动态** — X402 金额 = 实际转账金额，收款方 = Temar receiveAddress |
 | `GET` | `/v1/payment/{orderId}` | 查询支付订单状态 | 无需支付，MCP API Key 鉴权 |
 | `DELETE` | `/v1/payment/{orderId}` | 取消支付订单 | 无需支付，MCP API Key 鉴权 |
 | `POST` | `/v1/payout/create` | 创建代付订单（付款） | **动态** — X402 金额 = 实际代付金额，收款方 = `withdrawAddress` |
@@ -86,9 +86,9 @@ Content-Type: application/json
 }
 ```
 
-> ⚠️ **不需要传收款地址** — 收款地址由 Timar 系统生成。
+> ⚠️ **不需要传收款地址** — 收款地址由 Temar 系统生成。
 
-服务器内部先调 Timar API 创建订单，拿到 `receiveAddress`，然后返回 `402`：
+服务器内部先调 Temar API 创建订单，拿到 `receiveAddress`，然后返回 `402`：
 
 ```json
 {
@@ -97,7 +97,7 @@ Content-Type: application/json
     "scheme": "exact",
     "network": "base",
     "maxAmountRequired": "100",
-    "payTo": "0xTimarReceiveAddress",
+    "payTo": "0xTemarReceiveAddress",
     "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
     "description": "Pay 100 USDT to complete this payment (Order: pay_abc123)"
   }],
@@ -105,7 +105,7 @@ Content-Type: application/json
 }
 ```
 
-> `payTo` = Timar 为本次订单生成的收款地址（来自 API 响应的 `receiveAddress` 字段）
+> `payTo` = Temar 为本次订单生成的收款地址（来自 API 响应的 `receiveAddress` 字段）
 
 #### 第 2 步：Agent 用用户授权钱包完成链上支付
 
@@ -133,7 +133,7 @@ X-PAYMENT: {base64-encoded-payment-proof}
 
 #### 第 4 步：收到业务结果
 
-服务器验证链上凭证 → 调用 Timar API → 返回 200：
+服务器验证链上凭证 → 调用 Temar API → 返回 200：
 
 ```json
 {
@@ -351,7 +351,7 @@ Host: {x402-server}
 
 ## 协议栈
 
-本 Skill 在 Timar 支付协议栈中的位置：
+本 Skill 在 Temar 支付协议栈中的位置：
 
 | 层级 | 协议/组件 | 角色 | 状态 |
 |------|----------|------|------|
@@ -359,7 +359,7 @@ Host: {x402-server}
 | L3 | AP2 (Google-style) | 授权与治理 | 规划中 |
 | L2 | ACP (Stripe × OpenAI) | 发现与商务 | 规划中 |
 | L1 | **X402 (Coinbase)** | **支付协议适配** | ✅ 已实现 |
-| L0 | **MCP (TimarAIMCP)** | **能力执行** | ✅ 已实现 |
+| L0 | **MCP (TemarAIMCP)** | **能力执行** | ✅ 已实现 |
 | — | **Skill (本文件)** | **AI 触发与引导** | ✅ 本文件 |
 
 ## 详细参考文档

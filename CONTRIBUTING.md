@@ -2,7 +2,7 @@
 
 ## Repository purpose
 
-`TimarAISkill` is the standalone repository for public AI-facing integration assets and future skill-related documentation. The main published content currently lives under `docs/skill/`.
+`TemarAISkill` is the standalone repository for public AI-facing integration assets and future skill-related documentation. The main published content currently lives under `docs/skill/`.
 
 ## What belongs here
 

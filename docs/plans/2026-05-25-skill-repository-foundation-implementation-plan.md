@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add the repository-governance and maintenance documents that make `TimarAISkill` sustainable as the standalone public skill-documentation repository.
+**Goal:** Add the repository-governance and maintenance documents that make `TemarAISkill` sustainable as the standalone public skill-documentation repository.
 
 **Architecture:** Keep `docs/skill` as the published documentation tree and add a lightweight repository-maintenance layer around it. Use root-level governance files for repository policy, and `docs/` support files for structure mapping and upstream-sync workflow.
 
@@ -79,7 +79,7 @@ This repository stores public AI-facing integration assets and future skill-rela
 
 - [ ] **Step 4: Verify the contributor guide exists and is readable**
 
-Run: `Get-Content -Raw 'E:\项目\TimarAISkill\TimarAISkill\CONTRIBUTING.md'`
+Run: `Get-Content -Raw 'E:\项目\TemarAISkill\TemarAISkill\CONTRIBUTING.md'`
 Expected: the file explains repository scope, editing rules, source verification, language parity, and a review checklist.
 
 ### Task 2: Add changelog structure
@@ -107,7 +107,7 @@ The format is simple:
 ## 2026-05-25
 
 - Scope: repository bootstrap
-  Summary: imported the standalone `docs/skill` public integration asset set into `TimarAISkill`.
+  Summary: imported the standalone `docs/skill` public integration asset set into `TemarAISkill`.
 
 - Scope: repository foundation
   Summary: added contributor guidance, changelog structure, repository map, and maintenance workflow documents.
@@ -115,7 +115,7 @@ The format is simple:
 
 - [ ] **Step 3: Verify the changelog is present**
 
-Run: `Get-Content -Raw 'E:\项目\TimarAISkill\TimarAISkill\CHANGELOG.md'`
+Run: `Get-Content -Raw 'E:\项目\TemarAISkill\TemarAISkill\CHANGELOG.md'`
 Expected: the file includes a short format note and the two 2026-05-25 entries.
 
 ### Task 3: Add repository map
@@ -130,7 +130,7 @@ Expected: the file includes a short format note and the two 2026-05-25 entries.
 
 ## Purpose
 
-This file explains where documentation belongs in `TimarAISkill` and how the repository is organized.
+This file explains where documentation belongs in `TemarAISkill` and how the repository is organized.
 ```
 
 - [ ] **Step 2: Describe the root files and `docs/skill`**
@@ -166,7 +166,7 @@ This file explains where documentation belongs in `TimarAISkill` and how the rep
 
 - [ ] **Step 4: Verify the repository map**
 
-Run: `Get-Content -Raw 'E:\项目\TimarAISkill\TimarAISkill\docs\repository-map.md'`
+Run: `Get-Content -Raw 'E:\项目\TemarAISkill\TemarAISkill\docs\repository-map.md'`
 Expected: the file explains root responsibilities, `docs/skill`, layering, and future domain expansion.
 
 ### Task 4: Add maintenance workflow
@@ -181,7 +181,7 @@ Expected: the file explains root responsibilities, `docs/skill`, layering, and f
 
 ## Purpose
 
-This workflow defines how to update `TimarAISkill` after an upstream API or behavior change in a business repository.
+This workflow defines how to update `TemarAISkill` after an upstream API or behavior change in a business repository.
 ```
 
 - [ ] **Step 2: Write the source-verification sequence**
@@ -220,7 +220,7 @@ This workflow defines how to update `TimarAISkill` after an upstream API or beha
 
 - [ ] **Step 5: Verify the maintenance workflow**
 
-Run: `Get-Content -Raw 'E:\项目\TimarAISkill\TimarAISkill\docs\maintenance-workflow.md'`
+Run: `Get-Content -Raw 'E:\项目\TemarAISkill\TemarAISkill\docs\maintenance-workflow.md'`
 Expected: the file documents upstream verification, update order, language parity, and release checks.
 
 ### Task 5: Final repository verification and commit
@@ -230,24 +230,24 @@ Expected: the file documents upstream verification, update order, language parit
 
 - [ ] **Step 1: Run a repository structure check**
 
-Run: `Get-ChildItem -Recurse -File 'E:\项目\TimarAISkill\TimarAISkill' | Select-Object FullName`
+Run: `Get-ChildItem -Recurse -File 'E:\项目\TemarAISkill\TemarAISkill' | Select-Object FullName`
 Expected: the repository contains `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `docs/repository-map.md`, `docs/maintenance-workflow.md`, `docs/specs/...`, and `docs/skill/...`.
 
 - [ ] **Step 2: Run an unfinished-content scan**
 
-Run: `rg -n "TODO|TBD|placeholder|fill in|later" 'E:\项目\TimarAISkill\TimarAISkill'`
+Run: `rg -n "TODO|TBD|placeholder|fill in|later" 'E:\项目\TemarAISkill\TemarAISkill'`
 Expected: no unfinished placeholders in the newly added governance and workflow docs.
 
 - [ ] **Step 3: Stage the new files**
 
 ```bash
-git -C 'E:\项目\TimarAISkill\TimarAISkill' add CONTRIBUTING.md CHANGELOG.md docs/repository-map.md docs/maintenance-workflow.md docs/plans/2026-05-25-skill-repository-foundation-implementation-plan.md
+git -C 'E:\项目\TemarAISkill\TemarAISkill' add CONTRIBUTING.md CHANGELOG.md docs/repository-map.md docs/maintenance-workflow.md docs/plans/2026-05-25-skill-repository-foundation-implementation-plan.md
 ```
 
 - [ ] **Step 4: Commit the repository foundation docs**
 
 ```bash
-git -C 'E:\项目\TimarAISkill\TimarAISkill' commit -m "docs: add skill repository foundation docs"
+git -C 'E:\项目\TemarAISkill\TemarAISkill' commit -m "docs: add skill repository foundation docs"
 ```
 
 ## Self-Review

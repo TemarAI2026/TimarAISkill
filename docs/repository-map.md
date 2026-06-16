@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This file explains where documentation belongs in `TimarAISkill` and how the repository is organized.
+This file explains where documentation belongs in `TemarAISkill` and how the repository is organized.
 
 ## Root files
 

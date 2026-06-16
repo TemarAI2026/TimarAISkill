@@ -2,7 +2,7 @@
 
 ## Summary
 
-This design defines the first public documentation structure for MCP-centered open integration guidance inside `TimarAISkill`.
+This design defines the first public documentation structure for MCP-centered open integration guidance inside `TemarAISkill`.
 
 The repository already has:
 

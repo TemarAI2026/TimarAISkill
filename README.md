@@ -1,4 +1,4 @@
-# TimarAISkill
+# TemarAISkill
 
 This repository is the standalone home for public AI-facing integration assets and future skill-related documentation.
 
@@ -16,7 +16,7 @@ This repository is the standalone home for public AI-facing integration assets a
 
 ## 🚀 Quick Start for AI Agents
 
-**Any AI Agent that supports X402 protocol can use Timar payment capabilities in 3 steps:**
+**Any AI Agent that supports X402 protocol can use Temar payment capabilities in 3 steps:**
 
 1. **Read the SKILL file** — understand available capabilities and endpoints
 2. **Send HTTP requests** to the X402 adapter endpoint
@@ -52,20 +52,20 @@ SKILL.md (this repo)
     ↓ AI Agent reads, understands capabilities
 Any AI Agent
     ↓ HTTP + USDC payment (X402 protocol)
-X402 Adapter (TimarAIMCP)
+X402 Adapter (TemarAIMCP)
     ↓ MCP tool invocation + HMAC sign
-Timar Public API
+Temar Public API
     ↓ executes business logic
 Result returned to Agent
 ```
 
 **The SKILL file is the single source of truth for AI Agents.** It defines what capabilities exist, how to call them, and how to interpret results — regardless of which Agent framework is used.
 
-## Runtime: TimarAIMCP (MCP Server + X402 Adapter)
+## Runtime: TemarAIMCP (MCP Server + X402 Adapter)
 
-This repository (`TimarAISkill`) is the **skill & documentation layer**. The **runtime execution** is handled by the companion project:
+This repository (`TemarAISkill`) is the **skill & documentation layer**. The **runtime execution** is handled by the companion project:
 
-### [TimarAIMCP](https://github.com/your-org/TimarAIMCP) — MCP Server + X402 Adapter
+### [TemarAIMCP](https://github.com/your-org/TemarAIMCP) — MCP Server + X402 Adapter
 
 Two entry modes:
 

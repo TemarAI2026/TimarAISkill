@@ -6,7 +6,7 @@ This page explains how MCP should be understood by external integrators and AI c
 
 ## MCP role
 
-MCP is the unified open capability base for the Timar platform.
+MCP is the unified open capability base for the Temar platform.
 
 Its public responsibilities are:
 

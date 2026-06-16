@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Reframe the repository and top-level public docs so `TimarAISkill` officially presents MCP as the capability base and `skill / x402 / future protocols` as upper-layer integration adapters.
+**Goal:** Reframe the repository and top-level public docs so `TemarAISkill` officially presents MCP as the capability base and `skill / x402 / future protocols` as upper-layer integration adapters.
 
 **Architecture:** Keep the current `docs/skill` tree intact for now, but update the repository entrypoints and MCP-facing guidance so the documentation clearly explains the new layering model. This is a documentation-framing change, not a full content-structure rewrite.
 
@@ -50,8 +50,8 @@ Add or revise content so the repository map explains:
 
 - [ ] **Step 3: Verify root positioning docs**
 
-Run: `Get-Content -Raw 'E:\项目\TimarAISkill\TimarAISkill\README.md'`
-Run: `Get-Content -Raw 'E:\项目\TimarAISkill\TimarAISkill\docs\repository-map.md'`
+Run: `Get-Content -Raw 'E:\项目\TemarAISkill\TemarAISkill\README.md'`
+Run: `Get-Content -Raw 'E:\项目\TemarAISkill\TemarAISkill\docs\repository-map.md'`
 Expected: both files consistently describe MCP as the capability base and `skill / x402` as upper-layer adapters.
 
 ### Task 2: Reframe the public `docs/skill` entrypoints
@@ -79,7 +79,7 @@ Mirror the same structure and meaning in:
 
 - [ ] **Step 3: Verify section parity**
 
-Run: `Select-String -Path 'E:\项目\TimarAISkill\TimarAISkill\docs\skill\README*.md' -Pattern '^# |^## '`
+Run: `Select-String -Path 'E:\项目\TemarAISkill\TemarAISkill\docs\skill\README*.md' -Pattern '^# |^## '`
 Expected: the three README files keep the same section structure while reflecting the MCP-first framing.
 
 ### Task 3: Reframe hub routing documents
@@ -111,7 +111,7 @@ Revise the domain map docs so they explain:
 
 - [ ] **Step 3: Verify hub parity**
 
-Run: `Select-String -Path 'E:\项目\TimarAISkill\TimarAISkill\docs\skill\hub\*.md' -Pattern '^# |^## '`
+Run: `Select-String -Path 'E:\项目\TemarAISkill\TemarAISkill\docs\skill\hub\*.md' -Pattern '^# |^## '`
 Expected: the hub files remain structurally aligned while adopting MCP-first language.
 
 ### Task 4: Final consistency check and commit
@@ -121,19 +121,19 @@ Expected: the hub files remain structurally aligned while adopting MCP-first lan
 
 - [ ] **Step 1: Run unfinished-content scans on changed public entry docs**
 
-Run: `rg -n "TODO|TBD|placeholder|later|fill in" 'E:\项目\TimarAISkill\TimarAISkill\README.md' 'E:\项目\TimarAISkill\TimarAISkill\docs\repository-map.md' 'E:\项目\TimarAISkill\TimarAISkill\docs\skill\README.md' 'E:\项目\TimarAISkill\TimarAISkill\docs\skill\README.en.md' 'E:\项目\TimarAISkill\TimarAISkill\docs\skill\README.zh-TW.md' 'E:\项目\TimarAISkill\TimarAISkill\docs\skill\hub\integration-router.md' 'E:\项目\TimarAISkill\TimarAISkill\docs\skill\hub\integration-router.en.md' 'E:\项目\TimarAISkill\TimarAISkill\docs\skill\hub\integration-router.zh-TW.md' 'E:\项目\TimarAISkill\TimarAISkill\docs\skill\hub\domain-map.md' 'E:\项目\TimarAISkill\TimarAISkill\docs\skill\hub\domain-map.en.md' 'E:\项目\TimarAISkill\TimarAISkill\docs\skill\hub\domain-map.zh-TW.md'`
+Run: `rg -n "TODO|TBD|placeholder|later|fill in" 'E:\项目\TemarAISkill\TemarAISkill\README.md' 'E:\项目\TemarAISkill\TemarAISkill\docs\repository-map.md' 'E:\项目\TemarAISkill\TemarAISkill\docs\skill\README.md' 'E:\项目\TemarAISkill\TemarAISkill\docs\skill\README.en.md' 'E:\项目\TemarAISkill\TemarAISkill\docs\skill\README.zh-TW.md' 'E:\项目\TemarAISkill\TemarAISkill\docs\skill\hub\integration-router.md' 'E:\项目\TemarAISkill\TemarAISkill\docs\skill\hub\integration-router.en.md' 'E:\项目\TemarAISkill\TemarAISkill\docs\skill\hub\integration-router.zh-TW.md' 'E:\项目\TemarAISkill\TemarAISkill\docs\skill\hub\domain-map.md' 'E:\项目\TemarAISkill\TemarAISkill\docs\skill\hub\domain-map.en.md' 'E:\项目\TemarAISkill\TemarAISkill\docs\skill\hub\domain-map.zh-TW.md'`
 Expected: no unfinished-content markers in the reframed entry documents.
 
 - [ ] **Step 2: Stage the plan and documentation changes**
 
 ```bash
-git -C 'E:\项目\TimarAISkill\TimarAISkill' add README.md docs/repository-map.md docs/skill/README.md docs/skill/README.en.md docs/skill/README.zh-TW.md docs/skill/hub/integration-router.md docs/skill/hub/integration-router.en.md docs/skill/hub/integration-router.zh-TW.md docs/skill/hub/domain-map.md docs/skill/hub/domain-map.en.md docs/skill/hub/domain-map.zh-TW.md docs/plans/2026-05-25-mcp-first-documentation-reframing-implementation-plan.md
+git -C 'E:\项目\TemarAISkill\TemarAISkill' add README.md docs/repository-map.md docs/skill/README.md docs/skill/README.en.md docs/skill/README.zh-TW.md docs/skill/hub/integration-router.md docs/skill/hub/integration-router.en.md docs/skill/hub/integration-router.zh-TW.md docs/skill/hub/domain-map.md docs/skill/hub/domain-map.en.md docs/skill/hub/domain-map.zh-TW.md docs/plans/2026-05-25-mcp-first-documentation-reframing-implementation-plan.md
 ```
 
 - [ ] **Step 3: Commit the reframing change**
 
 ```bash
-git -C 'E:\项目\TimarAISkill\TimarAISkill' commit -m "docs: reframe public docs around mcp-first architecture"
+git -C 'E:\项目\TemarAISkill\TemarAISkill' commit -m "docs: reframe public docs around mcp-first architecture"
 ```
 
 ## Self-Review

@@ -2,7 +2,7 @@
 
 ## Goal
 
-Define the first implementation-oriented design for the future MCP repository that will expose Timar payment capabilities to AI coding assistants and MCP clients without re-implementing business logic.
+Define the first implementation-oriented design for the future MCP repository that will expose Temar payment capabilities to AI coding assistants and MCP clients without re-implementing business logic.
 
 The core principle is:
 
@@ -41,7 +41,7 @@ The future MCP repository should be understood as:
 - a configuration and environment adapter
 - a signing and request-header adapter
 - a capability router
-- a client layer that calls existing public Timar APIs
+- a client layer that calls existing public Temar APIs
 
 It should not be understood as:
 
@@ -58,7 +58,7 @@ The repository should follow this flow:
 3. runtime environment and credentials are resolved
 4. auth adapter generates timestamp, request ID, and signature
 5. capability router maps the tool call to the right API client method
-6. API client calls the existing public Timar service
+6. API client calls the existing public Temar service
 7. MCP response adapter returns a normalized tool result
 
 The only local logic should be:
@@ -412,6 +412,6 @@ The future MCP implementation repository should be:
 - capability-specific
 - signing-safe
 - router-driven
-- built on top of existing public Timar APIs
+- built on top of existing public Temar APIs
 
 It should not become a second payment core.

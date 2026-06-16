@@ -2,13 +2,13 @@
 
 ## Summary
 
-This design defines the next foundation step for the standalone `TimarAISkill` repository. The repository already contains the first imported public AI-facing integration asset set under `docs/skill`. The next step is to make the repository maintainable as a dedicated long-term home for public skill-related documentation.
+This design defines the next foundation step for the standalone `TemarAISkill` repository. The repository already contains the first imported public AI-facing integration asset set under `docs/skill`. The next step is to make the repository maintainable as a dedicated long-term home for public skill-related documentation.
 
 The focus of this phase is not to expand business scope. The focus is to add repository-level guidance and maintenance workflow documents so future contributors can keep the documentation set consistent, source-backed, and usable for external integrators and AI coding assistants.
 
 ## Goals
 
-- Establish `TimarAISkill` as the dedicated repository for public skill and AI-facing integration documentation.
+- Establish `TemarAISkill` as the dedicated repository for public skill and AI-facing integration documentation.
 - Keep `docs/skill` as the primary published document tree.
 - Add repository-level guidance so future updates follow the same structure and quality rules.
 - Define a repeatable maintenance workflow for syncing business-repository API changes into this repository.

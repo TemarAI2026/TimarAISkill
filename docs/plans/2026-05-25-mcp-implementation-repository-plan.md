@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the first thin-adapter MCP runtime repository shape for Timar that exposes payment, payout, and balance capabilities by calling existing public APIs rather than re-implementing business logic.
+**Goal:** Build the first thin-adapter MCP runtime repository shape for Temar that exposes payment, payout, and balance capabilities by calling existing public APIs rather than re-implementing business logic.
 
-**Architecture:** The runtime is a thin `Node.js + TypeScript` MCP server with explicit tools, environment-first config, one auth adapter, one capability router layer, and API clients that call existing Timar public services. All business execution stays in the existing public services.
+**Architecture:** The runtime is a thin `Node.js + TypeScript` MCP server with explicit tools, environment-first config, one auth adapter, one capability router layer, and API clients that call existing Temar public services. All business execution stays in the existing public services.
 
 **Tech Stack:** Node.js, TypeScript, MCP server SDK/runtime, JSON schema validation, HTTP client library, test runner
 

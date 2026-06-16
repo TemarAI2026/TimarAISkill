@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This workflow defines how to update `TimarAISkill` after an upstream API or behavior change in a business repository.
+This workflow defines how to update `TemarAISkill` after an upstream API or behavior change in a business repository.
 
 ## When to use this workflow
 
